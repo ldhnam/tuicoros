@@ -18,7 +18,9 @@ const KEYCHAIN_SERVICE: &str = "tuicoros";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SecretsBackend {
-    /// Keychain if available, otherwise file.
+    /// Release builds: the keychain if available, otherwise the file.
+    /// Development (debug) builds: the file. macOS ties a keychain "Always
+    /// Allow" to the exact binary, so every rebuild would ask again.
     #[default]
     Auto,
     Keychain,
@@ -55,6 +57,7 @@ pub fn open(backend: SecretsBackend, data_dir: &Path) -> Box<dyn SecretStore> {
     match backend {
         SecretsBackend::File => file(),
         SecretsBackend::Keychain => Box::new(KeychainStore),
+        SecretsBackend::Auto if cfg!(debug_assertions) => file(),
         SecretsBackend::Auto => match keyring::Entry::store_status() {
             Ok(()) => Box::new(KeychainStore),
             Err(err) => {

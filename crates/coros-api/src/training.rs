@@ -13,8 +13,7 @@ use crate::client::CorosClient;
 use crate::error::Result;
 use crate::request::ApiRequest;
 use crate::units::{
-    DateRange, LabelId, Meters, Pace, date_from_int, decenti, duration, meters, ser_opt_secs,
-    yyyymmdd,
+    DateRange, LabelId, Meters, Pace, date_from_int, decenti, duration, meters, yyyymmdd,
 };
 use crate::util::{FlexStr, Num};
 
@@ -50,7 +49,7 @@ impl CorosClient {
 // Models
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Schedule {
     pub plan_id: Option<String>,
     pub plan_name: Option<String>,
@@ -61,7 +60,7 @@ pub struct Schedule {
     pub weeks: Vec<WeekPlan>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScheduledWorkout {
     pub date: NaiveDate,
     pub id_in_plan: Option<String>,
@@ -76,12 +75,12 @@ pub struct ScheduledWorkout {
 }
 
 /// A workout as it appears on the calendar.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlannedWorkout {
     pub id: Option<String>,
     pub name: Option<String>,
     pub sport_code: Option<u32>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub duration: Option<Duration>,
     pub distance: Option<Meters>,
     pub training_load: Option<u32>,
@@ -89,27 +88,27 @@ pub struct PlannedWorkout {
 }
 
 /// Plan vs actual totals for one week.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WeekPlan {
     pub week_start: NaiveDate,
     pub plan_distance: Option<Meters>,
     pub actual_distance: Option<Meters>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub plan_duration: Option<Duration>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub actual_duration: Option<Duration>,
     pub plan_load: Option<f64>,
     pub actual_load: Option<f64>,
 }
 
 /// A workout from the library.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Workout {
     pub id: String,
     pub name: Option<String>,
     /// Workout-namespace sport code (1 = run, 2 = indoor bike, 4 = strength, 200 = road bike).
     pub sport_code: Option<u32>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub estimated_time: Option<Duration>,
     pub distance: Option<Meters>,
     pub training_load: Option<u32>,
@@ -117,7 +116,7 @@ pub struct Workout {
     pub steps: Vec<WorkoutStep>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WorkoutStep {
     /// Readable name: the custom name, or one derived from the step kind.
     pub label: String,
@@ -131,7 +130,7 @@ pub struct WorkoutStep {
 }
 
 /// What a workout step (or a workout-step lap) is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StepKind {
     /// A repeat block (`exerciseType` 0).
@@ -171,7 +170,7 @@ impl StepKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StepTarget {
     Distance {
@@ -188,7 +187,7 @@ pub enum StepTarget {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Intensity {
     /// `intensityType` 3: a pace range.

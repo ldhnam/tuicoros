@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phases 0 and 1 are done (API client + `login`/`api` CLI, verified live). Next: Phase 2 (MVP TUI). The docs in
+Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phases 0–1 are done; Phase 2 (MVP TUI: login, activities, detail) is code-complete, pending a live check. The docs in
 `docs/` are the source of truth; read the relevant one before changing code.
 
 - Roadmap and the current phase: `docs/PLAN.md` (tick checkboxes as work lands).
@@ -20,6 +20,8 @@ Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phases 0 and 1 are
 - Commit only scrubbed fixtures (`cargo run -p xtask -- scrub`).
 - The owner lives in Vietnam but the account is on the **`us`** server (verified). They mainly **run**: polish running views first.
 - Every screen must render at 80×24 and must not panic at any size (see `never_panics_at_any_size`).
+- **Don't make the owner's Keychain prompt**: debug builds use the file store; never run a release build or `TUICOROS_SECRETS=keychain` without asking.
+- New keys go in `keymap.rs` too (`documented_keys_are_bound` checks them).
 
 ## Commands
 

@@ -9,9 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::client::CorosClient;
 use crate::error::Result;
 use crate::request::ApiRequest;
-use crate::units::{
-    DateRange, Meters, Pace, date_from_int, duration, meters, ser_opt_secs, yyyymmdd,
-};
+use crate::units::{DateRange, Meters, Pace, date_from_int, duration, meters, yyyymmdd};
 use crate::util::Num;
 
 /// `analyse/dayDetail/query` is fetched in chunks of at most this many days.
@@ -55,7 +53,7 @@ impl CorosClient {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Analyse {
     /// One entry per day in the range.
     pub days: Vec<DailyMetrics>,
@@ -67,11 +65,11 @@ pub struct Analyse {
 }
 
 /// One day of EvoLab metrics. Days without watch data have most fields `None`.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DailyMetrics {
     pub date: NaiveDate,
     pub distance: Option<Meters>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub duration: Option<Duration>,
     /// Daily aggregate resting HR (what the web dashboard shows).
     pub rhr: Option<u32>,
@@ -109,7 +107,7 @@ pub struct DailyMetrics {
     pub stamina_level_7d: Option<f64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WeekLoad {
     pub week_start: NaiveDate,
     pub training_load: Option<f64>,

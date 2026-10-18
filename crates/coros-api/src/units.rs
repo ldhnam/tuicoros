@@ -11,13 +11,13 @@ use std::fmt;
 use std::time::Duration;
 
 use chrono::{DateTime, FixedOffset, NaiveDate, Offset, Utc};
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::error::{CorosError, Result};
 use crate::util::Num;
 
 /// A distance in metres.
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Meters(pub f64);
 
@@ -28,7 +28,7 @@ impl Meters {
 }
 
 /// A pace in seconds per kilometre.
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Pace(pub f64);
 
@@ -52,7 +52,7 @@ impl Pace {
 
 /// An activity id (`labelId`). Kept as a string: it is a large number that
 /// does not always fit JavaScript-safe integers.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct LabelId(pub String);
 
@@ -64,7 +64,7 @@ impl fmt::Display for LabelId {
 }
 
 /// One page of a paginated list.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Page<T> {
     pub items: Vec<T>,
     /// 1-based.
@@ -74,7 +74,7 @@ pub struct Page<T> {
 }
 
 /// An inclusive date range.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DateRange {
     pub start: NaiveDate,
     pub end: NaiveDate,
@@ -185,11 +185,22 @@ pub(crate) fn kcal(v: Num) -> Option<f64> {
     v.get().filter(|c| *c > 0.0).map(|c| c / 1000.0)
 }
 
-/// Serialize `Duration` as fractional seconds (readable `--json` output).
-pub(crate) fn ser_opt_secs<S: Serializer>(d: &Option<Duration>, s: S) -> Result<S::Ok, S::Error> {
-    match d {
-        Some(d) => s.serialize_some(&d.as_secs_f64()),
-        None => s.serialize_none(),
+/// `Option<Duration>` as fractional seconds, both ways (readable `--json`,
+/// round-trips through the on-disk cache).
+pub(crate) mod opt_secs {
+    use std::time::Duration;
+
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(d: &Option<Duration>, s: S) -> Result<S::Ok, S::Error> {
+        match d {
+            Some(d) => s.serialize_some(&d.as_secs_f64()),
+            None => s.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Duration>, D::Error> {
+        Ok(Option::<f64>::deserialize(d)?.and_then(|s| Duration::try_from_secs_f64(s).ok()))
     }
 }
 

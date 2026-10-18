@@ -1,0 +1,19 @@
+---
+source: crates/tuicoros/src/app.rs
+expression: "draw(&app, 60, 15).backend()"
+---
+" tuicoros  1 │ 2 Activities │ 3 │ 4 │ 5         Runner · US "
+"┌ Activities · All sports · last 90 days · 40 total ───────┐"
+"│  Date       Name             Distance  Time    Pace      │"
+"│▶ 2026-10-18 Morning Run       10.02 km   52:06   5:12 /km│"
+"│  2026-10-17 Interval           6.51 km   36:22   5:35 /km│"
+"│  2026-10-16 Progressive Run    7.48 km   43:59   5:53 /km│"
+"│  2026-10-15 Strength                 —   45:21          —│"
+"│  2026-10-14 Trail Run         10.86 km 2:35:52  14:21 /km│"
+"│  2026-10-13 Treadmill          8.56 km   51:32   6:01 /km│"
+"│  2026-10-12 Morning Run       10.70 km   56:21   5:16 /km│"
+"│  2026-10-11 Interval           6.40 km   36:10   5:39 /km│"
+"│  2026-10-10 Progressive Run    7.36 km   43:49   5:57 /km│"
+"│ 20 of 40 loaded · scroll for more                        │"
+"└──────────────────────────────────────────────────────────┘"
+" cached 3 min ago         ? help · ↑↓ j k move · Enter open "

@@ -103,6 +103,10 @@ Fall back to `0600` files when there is no keychain.
 **Why.** It balances convenience (tokens get invalidated often) against risk. See
 [SECURITY_AND_CONFIG.md](SECURITY_AND_CONFIG.md).
 
+**Amended 2026-10-18.** Token and hash are one secret, read once per process (each keychain read
+of a not-yet-allowed item is a prompt). Development builds default to the `0600` file because
+macOS re-asks after every rebuild.
+
 ---
 
 ## ADR-007: Caching — JSON files first, SQLite only if needed

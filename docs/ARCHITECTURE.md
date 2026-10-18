@@ -269,7 +269,9 @@ v1 uses a simple file cache; SQLite comes in Phase 5 if needed.
 See [SECURITY_AND_CONFIG.md](SECURITY_AND_CONFIG.md). In short:
 
 - `config.toml` in the config dir: region, units, theme, page size, default date range, export dir.
-- Keychain (via the `keyring` crate): MD5 password hash (only if "remember me") and the session token.
+- Secrets: the session token and (only with "remember me") the MD5 password hash, stored together
+  as **one** secret read once per run, in the OS keychain (release builds) or a `0600` file
+  (development builds, or `[secrets] backend = "file"`). See SECURITY_AND_CONFIG.md.
 - Logs: `tracing` to a rolling file in the data dir. **Never to stdout** while the TUI is running.
   `RUST_LOG`-style filter through `TUICOROS_LOG`. Tokens and hashes are redacted.
 

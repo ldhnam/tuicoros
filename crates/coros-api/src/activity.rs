@@ -16,7 +16,7 @@ use crate::sport::{SportCategory, SportType};
 use crate::training::StepKind;
 use crate::units::{
     LabelId, Meters, Pace, Page, date_from_int, datetime, datetime_centi, decenti, duration,
-    gps_degrees, kcal, meters, offset_from_quarters, ser_opt_secs, yyyymmdd,
+    gps_degrees, kcal, meters, offset_from_quarters, yyyymmdd,
 };
 use crate::util::{FlexStr, Num};
 
@@ -106,7 +106,7 @@ pub fn activity_download_request(id: &LabelId, sport: SportType, format: FileFor
 }
 
 /// Export formats for `activity/detail/download`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FileFormat {
     Csv,
@@ -230,7 +230,7 @@ impl CorosClient {
 // ---------------------------------------------------------------------------
 
 /// One row of the activity list. Zero-filled API fields become `None`.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActivitySummary {
     pub id: LabelId,
     pub name: Option<String>,
@@ -242,10 +242,10 @@ pub struct ActivitySummary {
     pub end: Option<DateTime<FixedOffset>>,
     pub distance: Option<Meters>,
     /// Wall-clock time including pauses.
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub elapsed: Option<Duration>,
     /// Moving time.
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub moving: Option<Duration>,
     /// Computed from distance and moving (or elapsed) time, not from the API's
     /// `avgSpeed`, whose meaning depends on the sport.
@@ -264,7 +264,7 @@ pub struct ActivitySummary {
 }
 
 /// Everything from `activity/detail/query` that we understand.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActivityDetail {
     pub id: LabelId,
     pub summary: DetailSummary,
@@ -279,16 +279,16 @@ pub struct ActivityDetail {
     pub weather: Option<Value>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DetailSummary {
     pub name: Option<String>,
     pub sport: Option<SportType>,
     pub start: Option<DateTime<FixedOffset>>,
     pub end: Option<DateTime<FixedOffset>>,
     pub distance: Option<Meters>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub elapsed: Option<Duration>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub moving: Option<Duration>,
     pub avg_pace: Option<Pace>,
     /// Fastest kilometre (runs).
@@ -316,7 +316,7 @@ pub struct DetailSummary {
 }
 
 /// One way of splitting the activity into laps. COROS sends several at once.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LapGroup {
     /// `2` auto laps, `10` workout steps, `11`/`12` longer segments, `-1` whole activity.
     pub kind: Option<i64>,
@@ -377,14 +377,14 @@ fn short_distance(m: Meters) -> String {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Lap {
     pub index: u32,
     /// For workout-step laps: what the step was (rep, recovery, …).
     pub step_kind: Option<StepKind>,
     /// Workout-step laps carry no distance; it is derived from time and pace.
     pub distance: Option<Meters>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub duration: Option<Duration>,
     pub pace: Option<Pace>,
     pub avg_hr: Option<u32>,
@@ -395,19 +395,19 @@ pub struct Lap {
 }
 
 /// Time spent in one heart-rate zone.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HrZone {
     /// 0-based; COROS shows zones 1–5 plus a zone 0 "below zone 1".
     pub zone: u32,
     pub low_bpm: Option<u32>,
     pub high_bpm: Option<u32>,
-    #[serde(serialize_with = "ser_opt_secs")]
+    #[serde(with = "crate::units::opt_secs", default)]
     pub time: Option<Duration>,
     pub percent: Option<f64>,
 }
 
 /// One sample of the recorded track (about one per second).
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Sample {
     pub time: Option<DateTime<Utc>>,
     pub lat: Option<f64>,
@@ -426,14 +426,14 @@ pub struct Sample {
 }
 
 /// The athlete's own rating and note.
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Feel {
     pub perceived_exertion: Option<PerceivedExertion>,
     pub note: Option<String>,
 }
 
 /// COROS's five-point RPE scale (`feelType` 1..=5; 0 = not rated).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PerceivedExertion {
     VeryLight,

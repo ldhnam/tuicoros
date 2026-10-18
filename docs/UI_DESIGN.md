@@ -108,8 +108,12 @@ switch between them. `Esc` goes back.
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Laps:** a table from the selected lap grouping (`g` cycles between auto-lap and manual laps). The
-fastest lap is highlighted.
+**Laps:** a table from the selected lap grouping. `c` cycles the groupings COROS provides: workout
+steps (shown first when present, with a Run/Recovery column), 1 km auto laps, 5/10 km segments, and
+the whole activity. The fastest lap is highlighted and marked `*`.
+
+*Phase 2 ships Summary and Laps; Charts, Map and Notes come in Phase 3. The summary already shows
+HR zones, the effort rating and the note.*
 
 **Charts:** ratatui `Chart` with a selectable metric (`m` cycles: HR, pace, elevation, cadence,
 power) against distance or time (`x` toggles). Data is downsampled to the chart width.

@@ -5,8 +5,8 @@
 | Secret                     | Sensitivity | Where it lives                                    |
 | -------------------------- | ----------- | ------------------------------------------------- |
 | Plaintext password         | High        | **Only in memory**, during login. Zeroized right after hashing. Never stored. |
-| `md5(password)`            | High: it can log in to COROS by itself | OS keychain, **only** if "Remember me" is on. |
-| Access token               | Medium (≈24 h lifetime) | OS keychain. Falls back to a `0600` file if no keychain is available (e.g. headless Linux). |
+| `md5(password)`            | High: it can log in to COROS by itself | With the token, **only** if "Remember me" is on. |
+| Access token               | Medium (≈24 h lifetime) | One secret (`auth`) holding token + optional hash: OS keychain in release builds, a `0600` file in development builds or when no keychain exists (headless Linux). |
 | `userId`, email, region    | Low         | Stored with the token (same place)                |
 | Activity data (GPS tracks) | Personal    | Cache dir. Never sent anywhere except COROS.      |
 
@@ -47,6 +47,18 @@ other sites. It is still a login credential for COROS, so it stays in the keycha
 - The README must say clearly that the project is **not affiliated with COROS** and may break.
 - If COROS asks third-party clients to stop using the private API, switch to the official MCP backend
   ([DECISIONS.md ADR-003](DECISIONS.md#adr-003)).
+
+### Why development builds don't use the keychain
+
+macOS ties a keychain "Always Allow" to the exact binary that asked. Every `cargo build` makes a
+new binary, so the keychain would ask for your password on every run while developing. Debug
+builds therefore default to the `0600` file. Release builds (`cargo install`, releases) use the
+keychain and read the secret **once per run** (one item, cached in memory), so you are asked at
+most once per install/upgrade. Override with `[secrets] backend = "keychain" | "file"` or
+`TUICOROS_SECRETS`.
+
+Older versions stored the token and the hash as two keychain items (`session`, `credentials`).
+They are merged into one item the first time a release build reads them.
 
 ## 4. Directory layout
 

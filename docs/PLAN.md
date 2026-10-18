@@ -140,26 +140,32 @@ The riskiest phase. **No UI work** until this phase's exit criteria are met.
 
 ---
 
-## Phase 2 — MVP TUI
+## Phase 2 — MVP TUI 🟡 (code done 2026-10-18 · live check pending)
 
 **Tasks**
 
-- [ ] `Action` / `Command` / `DataService` / `Remote<T>` / `RequestId` plumbing (ARCHITECTURE §3).
-- [ ] File cache v1 for activity lists and details (ARCHITECTURE §6).
-- [ ] Login screen (fields, region, remember-me, region hint on `1019`).
-- [ ] Activities screen: table, infinite scroll, sport/date filter, `/` search, sort, sport-aware pace.
-- [ ] Activity detail: header, Summary tab, Laps tab (lap grouping switch, fastest lap highlighted).
-- [ ] Footer key hints + `?` help overlay generated from the keymap.
-- [ ] Error toasts + status bar; "cached N min ago".
-- [ ] `format.rs` (metric only for now) with unit tests.
-- [ ] App state tests + render snapshots for the three screens × states × 2 sizes.
+- [x] `Action` / `Command` / `DataService` / `RequestId` plumbing (ARCHITECTURE §3). Per-screen
+      state instead of a generic `Remote<T>` (the list needs pages, the detail a single value).
+- [x] File cache v1: list pages (fresh 10 min, then shown + refreshed), details forever (samples
+      thinned to 1000), per account, `0600`, schema-versioned. `tuicoros cache clear`, `logout --purge`.
+- [x] Login screen: email, masked password (hashed + wiped on submit), region (auto/US/Asia/EU),
+      remember-me (opt-in), spinner, errors, "session expired" notice, email pre-filled.
+- [x] Activities screen: table (columns adapt to width), infinite scroll, sport/date filter popup,
+      `/` search, `s` sort, sport-aware pace, cached/updated age, empty/error/loading states.
+- [x] Activity detail: header, Summary tab (stats, HR zones, effort, note), Laps tab (lap groups
+      cycled with `c`, workout steps first, fastest lap `*`), scrolling.
+- [x] Footer key hints + `?` help overlay generated from `keymap.rs` (a test checks every documented key is bound).
+- [x] Error toasts (auto-hide) + status bar.
+- [x] App state tests + 19 render snapshots (login, list states, search, filter, help, detail, sizes 60–100 wide).
+- [x] Keychain prompts: one secret read once per run; development builds use the private file.
 
 **Exit criteria**
 
-- Cold start (no cache) shows the first page within ~2 s on a normal connection. A warm start shows
-  cached data immediately and refreshes in the background.
-- Scrolling 500+ activities stays smooth. The UI never freezes while loading.
-- Works at 80×24.
+- [ ] Cold start (no cache) shows the first page within ~2 s on a normal connection. *(The API call
+      took 0.9 s in a live test; the visible delay came from the macOS Keychain prompt, now fixed.)*
+      A warm start shows cached data immediately and refreshes in the background.
+- [ ] Scrolling 500+ activities stays smooth. The UI never freezes while loading.
+- [x] Works at 80×24 (snapshots at 60×15, 80×24, 100×30; no panic at any size).
 
 👉 **Good point to share an early build and get feedback before Phase 3.**
 
