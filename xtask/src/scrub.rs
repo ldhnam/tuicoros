@@ -147,7 +147,7 @@ impl Scrubber {
     }
 }
 
-/// Device names end with part of the Bluetooth address: "COROS PACE 4 3CD2B0".
+/// Device names end with part of the Bluetooth address: "COROS PACE 4 A1B2C3".
 fn mask_hardware_id(s: &str) -> Option<String> {
     let (head, tail) = s.rsplit_once(' ')?;
     let is_hw = tail.len() == 6
@@ -260,7 +260,7 @@ mod tests {
         assert_eq!(r["recordDetailList"][0]["site"], "Somewhere");
         assert_eq!(r["recordDetailList"][0]["graphList"], json!([]));
         let dev = scrubbed(
-            json!({"deviceList": [{"name": "COROS PACE 4 3CD2B0"}], "device": "COROS PACE 4"}),
+            json!({"deviceList": [{"name": "COROS PACE 4 A1B2C3"}], "device": "COROS PACE 4"}),
         );
         assert_eq!(dev["deviceList"][0]["name"], "COROS PACE 4 XXXXXX");
         assert_eq!(dev["device"], "COROS PACE 4");
