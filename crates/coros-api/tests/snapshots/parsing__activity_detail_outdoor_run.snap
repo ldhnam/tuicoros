@@ -99,6 +99,7 @@ expression: detail
     }
   ],
   "hr_zones": [],
+  "devices": [],
   "samples": [
     {
       "time": "2026-10-17T23:42:00Z",

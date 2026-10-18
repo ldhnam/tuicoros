@@ -5,8 +5,9 @@ use std::time::Duration;
 use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
 use coros_api::{
     AbilityScores, ActivityDetail, ActivitySummary, Daily, DailyMetrics, Dashboard, DetailSummary,
-    Feel, HrZone, HrvSummary, LabelId, Lap, LapGroup, Meters, Pace, Page, PerceivedExertion,
-    Sample, Schedule, ScheduledWorkout, SportType, StepKind, Weather, WeekLoad, WeekPlan,
+    Device, DeviceKind, Feel, HrZone, HrvSummary, LabelId, Lap, LapGroup, Meters, Pace, Page,
+    PerceivedExertion, Sample, Schedule, ScheduledWorkout, SportType, StepKind, Weather, WeekLoad,
+    WeekPlan,
 };
 
 pub fn today() -> NaiveDate {
@@ -164,6 +165,16 @@ pub fn detail() -> ActivityDetail {
                 split: None,
                 fastest: vec![],
                 laps: vec![lap(1, 10_020.0, 3131.0, 166, None)],
+            },
+        ],
+        devices: vec![
+            Device {
+                name: "COROS PACE 4 A1B2C3".into(),
+                kind: DeviceKind::Watch,
+            },
+            Device {
+                name: "COROS HEART RATE D4E5F6".into(),
+                kind: DeviceKind::HeartRateSensor,
             },
         ],
         hr_zones: vec![

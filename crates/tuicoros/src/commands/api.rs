@@ -324,8 +324,13 @@ fn print_detail(d: &ActivityDetail, requested: SportType) {
         }
         println!("{line}");
     }
+    let hr_source = match d.heart_rate_sensor() {
+        Some(sensor) => format!("   from {} (HR monitor)", sensor.model_name()),
+        None if s.avg_hr.is_some() => "   from the wrist".to_owned(),
+        None => String::new(),
+    };
     println!(
-        "Heart rate   avg {}  max {}",
+        "Heart rate   avg {}  max {}{hr_source}",
         format::opt(s.avg_hr),
         format::opt(s.max_hr)
     );

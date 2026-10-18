@@ -1,7 +1,8 @@
 //! Activity detail tabs added in Phase 3: Charts, Map, Notes.
 
 use coros_api::{
-    ActivityDetail, ActivitySummary, PerceivedExertion, Sample, SportCategory, SportType,
+    ActivityDetail, ActivitySummary, DeviceKind, PerceivedExertion, Sample, SportCategory,
+    SportType,
 };
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -457,10 +458,27 @@ pub fn render_notes(
             )],
         ));
     }
-    if let Some(device) = &summary.device {
+    if detail.devices.is_empty() {
+        if let Some(device) = &summary.device {
+            lines.push(row(
+                "Device",
+                vec![Span::styled(device.clone(), theme.text)],
+            ));
+        }
+    } else {
+        // The watch first, then paired sensors such as a HR monitor.
+        let names: Vec<String> = detail
+            .devices
+            .iter()
+            .map(|d| match d.kind {
+                DeviceKind::Watch => format!("{} (watch)", d.model_name()),
+                DeviceKind::HeartRateSensor => format!("{} (HR monitor)", d.model_name()),
+                DeviceKind::Sensor(code) => format!("{} (sensor type {code})", d.model_name()),
+            })
+            .collect();
         lines.push(row(
-            "Device",
-            vec![Span::styled(device.clone(), theme.text)],
+            "Devices",
+            vec![Span::styled(names.join(" · "), theme.text)],
         ));
     }
     frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), area);

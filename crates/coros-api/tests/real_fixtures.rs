@@ -10,8 +10,8 @@ use std::collections::HashSet;
 use chrono::NaiveDate;
 use common::*;
 use coros_api::{
-    ActivityDetail, ActivityQuery, DateRange, Intensity, LabelId, LapGroup, Meters, Pace,
-    SportType, StepKind, StepTarget,
+    ActivityDetail, ActivityQuery, DateRange, DeviceKind, Intensity, LabelId, LapGroup, Meters,
+    Pace, SportType, StepKind, StepTarget,
 };
 use wiremock::MockServer;
 
@@ -127,6 +127,19 @@ async fn steady_run_12k() {
     );
     assert!(d.samples.iter().filter(|x| x.heart_rate.is_some()).count() > d.samples.len() / 2);
     assert!(d.samples.iter().any(|x| x.other.contains_key("groundTime")));
+    // The watch, plus the COROS HR monitor from `usedDeviceList`.
+    let kinds: Vec<_> = d.devices.iter().map(|x| (x.kind, x.model_name())).collect();
+    assert_eq!(
+        kinds,
+        [
+            (DeviceKind::Watch, "COROS PACE 4"),
+            (DeviceKind::HeartRateSensor, "COROS HEART RATE")
+        ]
+    );
+    assert_eq!(
+        d.heart_rate_sensor().map(|x| x.model_name()),
+        Some("COROS HEART RATE")
+    );
     // Per-second `speed` is pace in s/km for runs: the median sits near the 5:19 /km average.
     let mut paces: Vec<f64> = d
         .samples
@@ -196,6 +209,8 @@ async fn strength_session() {
     let d = detail("activity_detail/real_strength.json", SportType::Strength).await;
     assert_eq!((d.summary.distance, d.summary.avg_pace), (None, None));
     assert_eq!(d.lap_groups[0].laps.len(), 38, "one lap per set");
+    assert_eq!(d.heart_rate_sensor(), None, "wrist heart rate for this one");
+    assert_eq!(d.devices.len(), 1);
 }
 
 #[tokio::test]
