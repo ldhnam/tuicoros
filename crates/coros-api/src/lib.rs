@@ -26,8 +26,8 @@ mod util;
 
 pub use account::Account;
 pub use activity::{
-    ActivityDetail, ActivityQuery, ActivitySummary, DetailSummary, Feel, FileFormat, HrZone, Lap,
-    LapGroup, PerceivedExertion, Sample, Weather,
+    ActivityDetail, ActivityQuery, ActivitySummary, DetailSummary, Device, DeviceKind, Feel,
+    FileFormat, HrZone, Lap, LapGroup, PerceivedExertion, Sample, Weather,
 };
 pub use analyse::{Analyse, Daily, DailyMetrics, WeekLoad};
 pub use auth::{Credentials, Session, md5_hex};

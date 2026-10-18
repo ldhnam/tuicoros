@@ -272,6 +272,9 @@ pub struct ActivityDetail {
     pub lap_groups: Vec<LapGroup>,
     /// Time in each heart-rate zone.
     pub hr_zones: Vec<HrZone>,
+    /// The watch and any paired sensors (e.g. a HR monitor) used for this activity.
+    #[serde(default)]
+    pub devices: Vec<Device>,
     /// The recorded track, one sample per second.
     pub samples: Vec<Sample>,
     pub feel: Feel,
@@ -405,6 +408,49 @@ pub struct Lap {
     pub avg_cadence: Option<u32>,
     pub avg_power: Option<u32>,
     pub elevation_gain: Option<Meters>,
+}
+
+/// A device that recorded (part of) the activity.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Device {
+    /// As sent, e.g. "COROS HEART RATE 9234A4" (ends with part of the Bluetooth address).
+    pub name: String,
+    pub kind: DeviceKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceKind {
+    /// From `deviceList` (seen: type 40 = COROS PACE 4).
+    Watch,
+    /// From `usedDeviceList` with type 120 (seen: COROS HEART RATE).
+    HeartRateSensor,
+    /// Any other paired sensor, with COROS's type code.
+    Sensor(i64),
+}
+
+impl Device {
+    /// The name without the trailing hardware id: "COROS HEART RATE".
+    pub fn model_name(&self) -> &str {
+        match self.name.rsplit_once(' ') {
+            Some((head, tail))
+                if (4..=8).contains(&tail.len())
+                    && tail.chars().all(|c| c.is_ascii_hexdigit() || c == 'X') =>
+            {
+                head
+            }
+            _ => &self.name,
+        }
+    }
+}
+
+impl ActivityDetail {
+    /// The paired heart-rate sensor, if heart rate came from one rather than the wrist.
+    pub fn heart_rate_sensor(&self) -> Option<&Device> {
+        self.devices
+            .iter()
+            .find(|d| d.kind == DeviceKind::HeartRateSensor)
+    }
 }
 
 /// Time spent in one heart-rate zone.
@@ -584,6 +630,8 @@ struct RawDetail {
     summary: RawDetailSummary,
     lap_list: Vec<RawLapGroup>,
     zone_list: Vec<RawZoneGroup>,
+    device_list: Vec<RawDevice>,
+    used_device_list: Vec<RawDevice>,
     frequency_list: Vec<BTreeMap<String, Value>>,
     sport_feel_info: RawFeel,
     weather: Option<RawWeather>,
@@ -616,6 +664,31 @@ impl RawWeather {
     }
 }
 
+#[derive(Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+struct RawDevice {
+    name: FlexStr,
+    #[serde(rename = "type")]
+    kind: Num,
+}
+
+/// `usedDeviceList[].type` of a heart-rate sensor.
+const HR_SENSOR_TYPE: i64 = 120;
+
+impl RawDevice {
+    fn into_device(self, is_watch: bool) -> Option<Device> {
+        let kind = match (is_watch, self.kind.int()) {
+            (true, _) => DeviceKind::Watch,
+            (false, Some(HR_SENSOR_TYPE)) => DeviceKind::HeartRateSensor,
+            (false, code) => DeviceKind::Sensor(code.unwrap_or(0)),
+        };
+        Some(Device {
+            name: self.name.owned()?,
+            kind,
+        })
+    }
+}
+
 /// `zoneList[].type` for heart-rate zones (130 is pace zones).
 const HR_ZONE_TYPE: i64 = 126;
 
@@ -632,6 +705,16 @@ impl RawDetail {
                 .lap_list
                 .into_iter()
                 .map(|g| g.into_group(pace_based))
+                .collect(),
+            devices: self
+                .device_list
+                .into_iter()
+                .filter_map(|d| d.into_device(true))
+                .chain(
+                    self.used_device_list
+                        .into_iter()
+                        .filter_map(|d| d.into_device(false)),
+                )
                 .collect(),
             hr_zones: self
                 .zone_list

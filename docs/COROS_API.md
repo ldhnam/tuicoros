@@ -213,6 +213,11 @@ Lap items: `distance` and `time` ×100, `avgPace` s/km, `avgHr`, `maxHr`, `avgCa
 0 = below zone 1, sent with zone 1's bounds), `leftScope`/`rightScope` (bpm), `second`, `percent`.
 `type: 130` = pace zones (scopes in s/km ×1000, not modelled yet).
 
+`deviceList[]`: the recording watch (`name` e.g. "COROS PACE 4 XXXXXX", `type: 40`).
+`usedDeviceList[]`: paired sensors; `type: 120` = heart-rate monitor (e.g. "COROS HEART RATE
+XXXXXX"). The trailing hex token is the device's id suffix: strip it for display and never commit
+it unscrubbed. No sensor entry = HR came from the watch's wrist sensor.
+
 `frequencyList[]` (one per second): `timestamp` (×100 epoch s), `distance` (×100 m, cumulative),
 `heart` (bpm), `cadence` (spm), `power` (W), `altitude` (m), `speed` and `adjustedPace` (s/km for
 runs), `cadenceLength` (stride, cm), `groundTime` (ms), `verticalVibration`,
@@ -380,6 +385,7 @@ Added in Phase 3 (live, 2026-10-18):
 | Per-second `speed` / `adjustedPace` are pace in s/km for runs (median 320 vs a 5:19 /km activity) | ✅ Live; meaning for other sports unknown |
 | `analyse/dayDetail/query` also returns `weekList` (weekly load + recommended range) | ✅ Live |
 | `dayList[].distance` / `duration` are always 0 | ✅ Live: weekly distance has to come from activities |
+| `usedDeviceList[]` `type 120` = paired HR monitor (COROS HEART RATE); `deviceList` `type 40` = the watch | ✅ Live (2026-10-18) |
 | Resting HR: `dashboard.summaryInfo.rhr` (54) ≠ `dayList[].rhr` (70) on the same day; `testRhr` absent | ⚠️ Which one t.coros.com shows is unconfirmed |
 | `activity/query` `totalPage` can exceed what the requested `size` implies: stop on an empty page | ✅ Live (handled) |
 

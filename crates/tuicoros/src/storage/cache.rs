@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use crate::paths::ensure_private_dir;
 
 /// Bump when cached model types change shape; old entries are then ignored.
-const SCHEMA: u32 = 2;
+const SCHEMA: u32 = 3;
 
 #[derive(Debug, Clone)]
 pub struct Cache {

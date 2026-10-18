@@ -376,6 +376,16 @@ impl DetailScreen {
             "Avg / max HR",
             format!("{} / {} bpm", format::opt(s.avg_hr), format::opt(s.max_hr)),
         ));
+        if s.avg_hr.is_some() {
+            // Where the heart rate came from: a paired HR monitor or the watch's
+            // wrist sensor. The Notes tab names the model; values here get 17 cells.
+            let source = if d.heart_rate_sensor().is_some() {
+                "HR monitor"
+            } else {
+                "wrist (watch)"
+            };
+            stats.push(("Heart rate from", source.to_owned()));
+        }
         if s.avg_cadence.is_some() {
             stats.push((
                 "Cadence",
