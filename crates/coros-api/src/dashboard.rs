@@ -21,7 +21,7 @@ impl CorosClient {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Dashboard {
     /// Recovery, 0–100 %.
     pub recovery_pct: Option<f64>,
@@ -39,7 +39,7 @@ pub struct Dashboard {
 }
 
 /// EvoLab running ability scores (0–100).
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AbilityScores {
     pub aerobic_endurance: Option<f64>,
     pub lactate_threshold: Option<f64>,
@@ -47,7 +47,7 @@ pub struct AbilityScores {
     pub anaerobic_capacity: Option<f64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HrvSummary {
     /// The most recent night, if COROS has a value for it.
     pub latest: Option<HrvNight>,
@@ -59,7 +59,7 @@ pub struct HrvSummary {
     pub remaining_wear_days: Option<u32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HrvNight {
     pub date: NaiveDate,
     /// Average overnight HRV, ms.

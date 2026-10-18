@@ -7,7 +7,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::error::CorosError;
 
@@ -165,6 +165,13 @@ impl Serialize for SportType {
     }
 }
 
+impl<'de> Deserialize<'de> for SportType {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
+}
+
 /// Accepts a key in any case/separator style (`trail-run`, `TRAIL_RUN`,
 /// `trailRun`) or a numeric code (`102`).
 impl FromStr for SportType {
@@ -172,6 +179,7 @@ impl FromStr for SportType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
+        let s = s.strip_prefix("unknown:").unwrap_or(s);
         if let Ok(code) = s.parse::<u32>() {
             return Ok(SportType::from_code(code));
         }

@@ -8,7 +8,7 @@ use color_eyre::eyre::eyre;
 use coros_api::{ClientConfig, CorosClient, Region};
 use std::time::Duration;
 
-use crate::config::LoadedConfig;
+use crate::config::{LoadedConfig, NetworkConfig};
 use crate::paths::Paths;
 use crate::storage::secrets;
 use crate::storage::vault::{StoredSession, Vault};
@@ -30,17 +30,7 @@ impl Ctx<'_> {
     }
 
     pub fn client_config(&self, region: Region) -> ClientConfig {
-        let net = &self.loaded.config.network;
-        ClientConfig {
-            // Development only: point every region at a mock server.
-            base_url: std::env::var("TUICOROS_API_BASE_URL")
-                .ok()
-                .filter(|u| !u.is_empty()),
-            user_agent: net.user_agent.clone(),
-            timeout: Duration::from_secs(net.timeout_secs),
-            max_concurrent: usize::from(net.max_concurrent_requests),
-            ..ClientConfig::new(region)
-        }
+        client_config(&self.loaded.config.network, region)
     }
 
     /// A client for the stored session, with auto re-login if a password hash
@@ -82,24 +72,51 @@ impl Ctx<'_> {
             );
         }
 
-        let mut client =
-            CorosClient::new(self.client_config(stored.region))?.with_session(stored.to_api());
-        if let Some(credentials) = vault.credentials()? {
-            client = client.with_credentials(credentials);
-        }
-        let (email, nickname) = (stored.email.clone(), stored.nickname.clone());
-        let client = client.on_session_change(move |session| {
-            let updated = StoredSession::from_api(session, email.clone(), nickname.clone());
-            if let Err(err) = vault.save_session(&updated) {
-                tracing::warn!(error = %format!("{err:#}"), "could not save the refreshed token");
-            }
-        });
+        let client = build_client(vault, &stored, self.client_config(stored.region))?;
         Ok((client, stored))
     }
 }
 
-/// `tuicoros logout`.
-pub fn logout(ctx: &Ctx) -> Result<()> {
+/// HTTP settings from config. `TUICOROS_API_BASE_URL` (development only)
+/// points every region at a mock server.
+pub fn client_config(net: &NetworkConfig, region: Region) -> ClientConfig {
+    ClientConfig {
+        base_url: std::env::var("TUICOROS_API_BASE_URL")
+            .ok()
+            .filter(|u| !u.is_empty()),
+        user_agent: net.user_agent.clone(),
+        timeout: Duration::from_secs(net.timeout_secs),
+        max_concurrent: usize::from(net.max_concurrent_requests),
+        ..ClientConfig::new(region)
+    }
+}
+
+/// A client for a stored session: auto re-login when a password hash is
+/// stored, and refreshed tokens saved back to the vault. Shared by the CLI and the TUI.
+pub fn build_client(
+    vault: Vault,
+    stored: &StoredSession,
+    config: ClientConfig,
+) -> Result<CorosClient> {
+    let mut client = CorosClient::new(config)?.with_session(stored.to_api());
+    if let Some(credentials) = vault.credentials()? {
+        client = client.with_credentials(credentials);
+    }
+    let (email, nickname) = (stored.email.clone(), stored.nickname.clone());
+    Ok(client.on_session_change(move |session| {
+        let updated = StoredSession::from_api(session, email.clone(), nickname.clone());
+        if let Err(err) = vault.save_session(&updated) {
+            tracing::warn!(error = %format!("{err:#}"), "could not save the refreshed token");
+        }
+    }))
+}
+
+/// `tuicoros logout [--purge]`.
+pub fn logout(ctx: &Ctx, purge: bool) -> Result<()> {
+    if purge {
+        let freed = crate::storage::cache::clear(&ctx.paths.cache_dir)?;
+        println!("Deleted the cache ({} KB).", freed / 1024);
+    }
     let vault = ctx.vault();
     match vault.clear()? {
         (false, false) => println!("You were not signed in."),

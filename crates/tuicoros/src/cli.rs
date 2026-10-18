@@ -32,10 +32,23 @@ pub enum Command {
     /// Sign in to COROS. Finds your account's region automatically unless --region is given.
     Login(LoginArgs),
     /// Sign out: remove the stored token and password hash.
-    Logout,
+    Logout {
+        /// Also delete cached activities.
+        #[arg(long)]
+        purge: bool,
+    },
+    /// Manage the local cache of activities.
+    #[command(subcommand)]
+    Cache(CacheCommand),
     /// Call the COROS API directly (debugging, scripting, capturing test fixtures).
     #[command(subcommand)]
     Api(ApiCommand),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Subcommand)]
+pub enum CacheCommand {
+    /// Delete everything in the cache (it refills as you browse).
+    Clear,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Args)]

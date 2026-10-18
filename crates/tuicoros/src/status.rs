@@ -68,7 +68,12 @@ pub fn write_status(
         config.region.label()
     )?;
     writeln!(out, "Data dir     {}", paths.data_dir.display())?;
-    writeln!(out, "Cache dir    {}", paths.cache_dir.display())?;
+    writeln!(
+        out,
+        "Cache        {} ({} KB)",
+        paths.cache_dir.display(),
+        crate::storage::cache::size(&paths.cache_dir) / 1024
+    )?;
     writeln!(out, "Logs         {}", paths.log_dir().display())?;
     writeln!(out, "Log level    {}", config.log.level)?;
     if !loaded.warnings.is_empty() {

@@ -8,7 +8,7 @@ use crate::units::date_from_int;
 use crate::util::{FlexStr, Num};
 
 /// The signed-in user's profile.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Account {
     pub user_id: String,
     pub nickname: Option<String>,

@@ -376,3 +376,32 @@ async fn workout_library_structure() {
         }
     );
 }
+
+/// Models are cached on disk as JSON; they must round-trip exactly.
+#[tokio::test]
+async fn models_round_trip_through_json() {
+    for (fixture, sport) in [
+        ("activity_detail/real_interval.json", SportType::Run),
+        ("activity_detail/real_strength.json", SportType::Strength),
+    ] {
+        let d = detail(fixture, sport).await;
+        let back: ActivityDetail =
+            serde_json::from_str(&serde_json::to_string(&d).unwrap()).unwrap();
+        assert_eq!(back, d, "{fixture}");
+    }
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        "GET",
+        "/activity/query",
+        "activity_query/real_90_days.json",
+    )
+    .await;
+    let page = signed_in(&server)
+        .activities(&ActivityQuery::default())
+        .await
+        .unwrap();
+    let back: coros_api::Page<coros_api::ActivitySummary> =
+        serde_json::from_str(&serde_json::to_string(&page).unwrap()).unwrap();
+    assert_eq!(back, page);
+}
