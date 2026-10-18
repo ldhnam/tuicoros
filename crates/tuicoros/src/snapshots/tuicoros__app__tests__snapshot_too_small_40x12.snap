@@ -1,0 +1,16 @@
+---
+source: crates/tuicoros/src/app.rs
+expression: "draw(&app(), 40, 12).backend()"
+---
+"                                        "
+"                                        "
+"                                        "
+"                                        "
+"                                        "
+"           Terminal too small           "
+"         Need 60×15, have 40×12         "
+"       Resize, or press q to quit       "
+"                                        "
+"                                        "
+"                                        "
+"                                        "

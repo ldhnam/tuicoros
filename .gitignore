@@ -1,0 +1,8 @@
+/target
+*.snap.new
+*.pending-snap
+.DS_Store
+
+# Never commit raw (unscrubbed) API captures or local credentials
+/captures/
+.env
