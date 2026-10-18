@@ -4,14 +4,14 @@
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, NaiveDate, Utc};
 use coros_api::{
     ActivityDetail, ActivityQuery, ActivitySummary, ClientConfig, CorosClient, Credentials,
-    LabelId, Page, Region, SportType, yyyymmdd,
+    DateRange, LabelId, Page, Region, SportType, yyyymmdd,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::{Action, RequestId, UiError, UiErrorKind};
+use crate::action::{Action, Fetched, RequestId, UiError, UiErrorKind};
 use crate::commands::{build_client, login::sign_in};
 use crate::storage::cache::Cache;
 use crate::storage::vault::{StoredSession, Vault};
@@ -40,6 +40,45 @@ pub enum Command {
         sport: SportType,
         force: bool,
     },
+    Fetch {
+        req: RequestId,
+        what: FetchKind,
+        force: bool,
+    },
+}
+
+/// Data the insight screens need. Each kind has its own cache key and freshness.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FetchKind {
+    Dashboard,
+    /// Daily EvoLab metrics and weekly loads.
+    Daily(DateRange),
+    /// Training calendar.
+    Schedule(DateRange),
+    /// Every activity in the range (weekly distance).
+    Activities(DateRange),
+}
+
+impl FetchKind {
+    fn key(&self) -> String {
+        let r = |r: &DateRange| format!("{}-{}", yyyymmdd(r.start), yyyymmdd(r.end));
+        match self {
+            Self::Dashboard => "dashboard".to_owned(),
+            Self::Daily(range) => format!("daily-{}", r(range)),
+            Self::Schedule(range) => format!("schedule-{}", r(range)),
+            Self::Activities(range) => format!("range-{}", r(range)),
+        }
+    }
+
+    /// How long a cached copy is good without refetching.
+    fn fresh_for(&self, today: NaiveDate) -> chrono::Duration {
+        match self {
+            Self::Dashboard | Self::Schedule(_) => chrono::Duration::minutes(10),
+            // Ranges that end before today don't change any more.
+            Self::Daily(r) | Self::Activities(r) if r.end < today => chrono::Duration::days(1),
+            Self::Daily(_) | Self::Activities(_) => chrono::Duration::minutes(30),
+        }
+    }
 }
 
 type ConfigFn = dyn Fn(Region) -> ClientConfig + Send + Sync;
@@ -117,6 +156,62 @@ impl DataService {
                 sport,
                 force,
             } => self.load_detail(req, id, sport, force).await,
+            Command::Fetch { req, what, force } => self.fetch(req, what, force).await,
+        }
+    }
+
+    /// Cache-first fetch: send a cached copy at once, then refresh if it's stale.
+    async fn fetch(&self, req: RequestId, what: FetchKind, force: bool) {
+        let Some(s) = self.signed_in() else {
+            return self.send(not_signed_in(req));
+        };
+        let key = what.key();
+        if !force && let Some((data, fetched_at)) = s.cache.get::<Fetched>(&key) {
+            let fresh = Utc::now() - fetched_at < what.fresh_for(Local::now().date_naive());
+            self.send(Action::Fetched {
+                req,
+                data: Box::new(data),
+                fetched_at,
+                from_cache: true,
+                refreshing: !fresh,
+            });
+            if fresh {
+                return;
+            }
+        }
+        let result = match what {
+            FetchKind::Dashboard => s.client.dashboard().await.map(Fetched::Dashboard),
+            FetchKind::Daily(range) => s.client.day_detail(range).await.map(Fetched::Daily),
+            FetchKind::Schedule(range) => s.client.schedule(range).await.map(Fetched::Schedule),
+            FetchKind::Activities(range) => {
+                let query = ActivityQuery {
+                    page: 1,
+                    size: 200,
+                    from: Some(range.start),
+                    to: Some(range.end),
+                    sports: Vec::new(),
+                };
+                s.client
+                    .all_activities(&query, Some(5000))
+                    .await
+                    .map(Fetched::Activities)
+            }
+        };
+        match result {
+            Ok(data) => {
+                let now = Utc::now();
+                if let Err(err) = s.cache.put(&key, &data, now) {
+                    tracing::warn!(error = %format!("{err:#}"), key, "could not cache");
+                }
+                self.send(Action::Fetched {
+                    req,
+                    data: Box::new(data),
+                    fetched_at: now,
+                    from_cache: false,
+                    refreshing: false,
+                });
+            }
+            Err(err) => self.fail(req, "loading data", &err),
         }
     }
 

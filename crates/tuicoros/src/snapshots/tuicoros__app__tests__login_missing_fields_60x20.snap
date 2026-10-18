@@ -2,7 +2,7 @@
 source: crates/tuicoros/src/app.rs
 expression: "draw(&app, 60, 20).backend()"
 ---
-" tuicoros  1 │ 2 Activities │ 3 │ 4 │ 5       not signed in "
+" tuicoros  1 Dashboard │ 2 │ 3 │ 4 │ 5        not signed in "
 "                                                            "
 "                                                            "
 "┌ Sign in to COROS ────────────────────────────────────────┐"
@@ -21,4 +21,4 @@ expression: "draw(&app, 60, 20).backend()"
 "│                                                          │"
 "└──────────────────────────────────────────────────────────┘"
 "                                                            "
-" v0.1.0                    Enter sign in · Tab ↓ next field "
+" v0.3.0                    Enter sign in · Tab ↓ next field "

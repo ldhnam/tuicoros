@@ -68,6 +68,12 @@ Data: `dashboard/query` (HRV), `analyse/query` (last 28 days), `training/schedul
 week's plan vs actual), and `activity/query` page 1 with size 5. `Enter` on a recent activity opens
 its detail.
 
+*As built (Phase 3):* the Dashboard is the first screen after sign-in. Tiles: recovery, fatigue
+and load ratio (with a 5-zone meter), resting HR, HRV (or "N more nights" until COROS has enough
+data), VO2max, threshold HR and pace; narrow terminals drop tiles from the right. Below: the 28-day
+acute/chronic load chart, this week's plan vs actual, recent activities (`↑↓` + `Enter` opens one)
+and ability scores. `r` refreshes.
+
 ### 2.3 Activities list
 
 ```
@@ -112,8 +118,10 @@ switch between them. `Esc` goes back.
 steps (shown first when present, with a Run/Recovery column), 1 km auto laps, 5/10 km segments, and
 the whole activity. The fastest lap is highlighted and marked `*`.
 
-*Phase 2 ships Summary and Laps; Charts, Map and Notes come in Phase 3. The summary already shows
-HR zones, the effort rating and the note.*
+*As built (Phase 3):* all five tabs exist. Charts: `m` cycles HR / pace / elevation / cadence /
+power (only those the activity recorded; the first press just opens the tab), `x` switches the
+x-axis between distance and time; pace is drawn faster-up with stops capped. Map: braille route,
+north up, `S`/`F` markers (`S/F` on loops). Notes: effort scale, note, weather, times, device.
 
 **Charts:** ratatui `Chart` with a selectable metric (`m` cycles: HR, pace, elevation, cadence,
 power) against distance or time (`x` toggles). Data is downsampled to the chart width.
@@ -155,6 +163,11 @@ Range selector on top: `[` / `]` move the window, `w` switches between 4 / 12 / 
 
 When `sportDataSummary.modelValidState` is false: "EvoLab needs more data — keep training with
 your watch."
+
+*As built (Phase 3):* `[` / `]` move the window, `w` cycles 4 / 12 / 24 weeks, `r` refreshes.
+Panels: acute vs chronic load, resting HR (EvoLab daily value), weekly load against COROS's
+recommended range (bars outside it are highlighted), weekly distance from your activities, and
+how VO2max, threshold HR/pace, stamina and fitness changed across the window.
 
 ### 2.6 Calendar
 

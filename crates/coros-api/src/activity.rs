@@ -275,8 +275,21 @@ pub struct ActivityDetail {
     /// The recorded track, one sample per second.
     pub samples: Vec<Sample>,
     pub feel: Feel,
-    /// Weather block as sent by the API (shape not modelled yet).
-    pub weather: Option<Value>,
+    pub weather: Option<Weather>,
+}
+
+/// Conditions during the activity (from COROS's weather provider).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Weather {
+    pub temperature_c: Option<f64>,
+    pub feels_like_c: Option<f64>,
+    pub humidity_pct: Option<f64>,
+    /// As sent ÷10; the unit (km/h or m/s) is not verified yet.
+    pub wind_speed: Option<f64>,
+    /// Degrees, 0 = from the north.
+    pub wind_direction_deg: Option<f64>,
+    /// COROS's condition code (meaning not mapped yet).
+    pub condition_code: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -419,9 +432,13 @@ pub struct Sample {
     pub power: Option<u32>,
     /// Metres; may be negative near sea level.
     pub altitude: Option<f64>,
-    /// Other numeric fields as sent by the API, e.g. `speed` and `adjustedPace`
-    /// (s/km for runs), `cadenceLength` (stride, cm), `groundTime` (ms),
-    /// `verticalVibration`, `verticalStrideRatio`, `slope`, `heartLevel`.
+    /// Current pace (runs and walks only: `speed` is s/km for those sports).
+    pub pace: Option<Pace>,
+    /// Grade-adjusted pace (runs and walks).
+    pub adjusted_pace: Option<Pace>,
+    /// Other numeric fields as sent by the API, e.g. `cadenceLength` (stride,
+    /// cm), `groundTime` (ms), `verticalVibration`, `verticalStrideRatio`,
+    /// `slope`, `heartLevel`, and `speed` for sports where its unit is unknown.
     pub other: BTreeMap<String, f64>,
 }
 
@@ -569,7 +586,34 @@ struct RawDetail {
     zone_list: Vec<RawZoneGroup>,
     frequency_list: Vec<BTreeMap<String, Value>>,
     sport_feel_info: RawFeel,
-    weather: Option<Value>,
+    weather: Option<RawWeather>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+struct RawWeather {
+    temperature: Num,
+    body_feel_temp: Num,
+    humidity: Num,
+    wind_speed: Num,
+    wind_direction: Num,
+    weather_type: Num,
+}
+
+impl RawWeather {
+    /// Values are ×10 (261 = 26.1 °C, humidity 810 = 81 %, direction 3380 = 338°).
+    fn into_weather(self) -> Option<Weather> {
+        let tenth = |n: Num| n.get().map(|v| v / 10.0);
+        let w = Weather {
+            temperature_c: tenth(self.temperature),
+            feels_like_c: tenth(self.body_feel_temp),
+            humidity_pct: self.humidity.nonzero().map(|v| v / 10.0),
+            wind_speed: tenth(self.wind_speed),
+            wind_direction_deg: tenth(self.wind_direction),
+            condition_code: self.weather_type.int().filter(|c| *c > 0),
+        };
+        (w.temperature_c.is_some() || w.humidity_pct.is_some()).then_some(w)
+    }
 }
 
 /// `zoneList[].type` for heart-rate zones (130 is pace zones).
@@ -600,9 +644,13 @@ impl RawDetail {
                         .collect()
                 })
                 .unwrap_or_default(),
-            samples: self.frequency_list.into_iter().map(sample).collect(),
+            samples: self
+                .frequency_list
+                .into_iter()
+                .map(|s| sample(s, pace_based))
+                .collect(),
             feel: self.sport_feel_info.into_feel(),
-            weather: self.weather.filter(|w| !w.is_null()),
+            weather: self.weather.and_then(RawWeather::into_weather),
             summary,
         }
     }
@@ -797,7 +845,7 @@ impl RawZoneItem {
     }
 }
 
-fn sample(mut raw: BTreeMap<String, Value>) -> Sample {
+fn sample(mut raw: BTreeMap<String, Value>, pace_based: bool) -> Sample {
     let mut take = |key: &str| Num(raw.remove(key).and_then(|v| v.as_f64()));
     let time = datetime_centi(take("timestamp"), None).map(|t| t.with_timezone(&Utc));
     let lat = gps_degrees(take("gpsLat"));
@@ -807,6 +855,12 @@ fn sample(mut raw: BTreeMap<String, Value>) -> Sample {
     let cadence = take("cadence").positive_u32();
     let power = take("power").positive_u32();
     let altitude = take("altitude").get();
+    let (pace, adjusted_pace) = if pace_based {
+        let p = |n: Num| n.get().filter(|v| *v > 0.0).map(Pace);
+        (p(take("speed")), p(take("adjustedPace")))
+    } else {
+        (None, None)
+    };
     let other = raw
         .into_iter()
         .filter_map(|(k, v)| v.as_f64().map(|f| (k, f)))
@@ -820,6 +874,8 @@ fn sample(mut raw: BTreeMap<String, Value>) -> Sample {
         cadence,
         power,
         altitude,
+        pace,
+        adjusted_pace,
         other,
     }
 }

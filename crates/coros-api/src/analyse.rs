@@ -39,18 +39,36 @@ impl CorosClient {
         Ok(raw.into())
     }
 
-    /// `GET analyse/dayDetail/query`: daily metrics over long ranges, fetched in
-    /// 12-week chunks and returned sorted by date.
-    pub async fn day_detail(&self, range: DateRange) -> Result<Vec<DailyMetrics>> {
-        let mut days = Vec::new();
+    /// `GET analyse/dayDetail/query`: daily metrics and weekly loads over long
+    /// ranges, fetched in 12-week chunks, sorted and de-duplicated.
+    pub async fn day_detail(&self, range: DateRange) -> Result<Daily> {
+        let mut daily = Daily {
+            days: Vec::new(),
+            weeks: Vec::new(),
+        };
         for chunk in range.chunks(DAY_DETAIL_CHUNK_DAYS) {
             let raw: RawDayList = self.send(&day_detail_request(chunk)).await?;
-            days.extend(raw.day_list.into_iter().filter_map(RawDay::into_metrics));
+            daily
+                .days
+                .extend(raw.day_list.into_iter().filter_map(RawDay::into_metrics));
+            daily
+                .weeks
+                .extend(raw.week_list.into_iter().filter_map(RawWeek::into_week));
         }
-        days.sort_by_key(|d| d.date);
-        days.dedup_by_key(|d| d.date);
-        Ok(days)
+        daily.days.sort_by_key(|d| d.date);
+        daily.days.dedup_by_key(|d| d.date);
+        daily.weeks.sort_by_key(|w| w.week_start);
+        daily.weeks.dedup_by_key(|w| w.week_start);
+        Ok(daily)
     }
+}
+
+/// `analyse/dayDetail/query` over a range.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Daily {
+    pub days: Vec<DailyMetrics>,
+    /// Weekly training load with COROS's recommended range.
+    pub weeks: Vec<WeekLoad>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -157,6 +175,7 @@ struct RawSportDataSummary {
 #[serde(default, rename_all = "camelCase")]
 struct RawDayList {
     day_list: Vec<RawDay>,
+    week_list: Vec<RawWeek>,
 }
 
 #[derive(Deserialize, Default)]

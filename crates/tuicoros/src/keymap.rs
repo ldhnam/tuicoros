@@ -28,6 +28,8 @@ pub enum Context {
     Search,
     Filter,
     Detail,
+    Dashboard,
+    Analysis,
     Placeholder,
     Help,
 }
@@ -78,7 +80,21 @@ pub const DETAIL: &[KeyHint] = &[
     hint("Tab ← →", "summary / laps", true),
     hint("↑↓ j k", "scroll laps", false),
     hint("c", "next lap grouping", true),
+    hint("m", "chart metric", false),
+    hint("x", "chart axis: distance / time", false),
     hint("r", "reload", true),
+];
+
+pub const DASHBOARD: &[KeyHint] = &[
+    hint("↑↓ j k", "choose recent activity", true),
+    hint("Enter", "open it", true),
+    hint("r", "refresh", true),
+];
+
+pub const ANALYSIS: &[KeyHint] = &[
+    hint("[ ]", "earlier / later", true),
+    hint("w", "4 / 12 / 24 weeks", true),
+    hint("r", "refresh", true),
 ];
 
 pub const HELP: &[KeyHint] = &[hint("Esc ?", "close", true)];
@@ -90,6 +106,8 @@ pub fn for_context(context: Context) -> &'static [KeyHint] {
         Context::Search => SEARCH,
         Context::Filter => FILTER,
         Context::Detail => DETAIL,
+        Context::Dashboard => DASHBOARD,
+        Context::Analysis => ANALYSIS,
         Context::Placeholder => &[],
         Context::Help => HELP,
     }

@@ -16,6 +16,9 @@ use ratatui::widgets::{
 use crate::action::{DetailMsg, Move, RequestId, RequestIds, UiError};
 use crate::format;
 use crate::screens::activities::sport_name;
+use crate::screens::detail_views::{
+    Metric, XAxis, available_metrics, default_metric, render_charts, render_map, render_notes,
+};
 use crate::service::{Command, age_label};
 use crate::theme::Theme;
 use crate::widgets::{bar, message, spinner};
@@ -24,6 +27,38 @@ use crate::widgets::{bar, message, spinner};
 pub enum DetailTab {
     Summary,
     Laps,
+    Charts,
+    Map,
+    Notes,
+}
+
+impl DetailTab {
+    pub const ALL: [DetailTab; 5] = [
+        Self::Summary,
+        Self::Laps,
+        Self::Charts,
+        Self::Map,
+        Self::Notes,
+    ];
+
+    fn title(self) -> &'static str {
+        match self {
+            Self::Summary => "Summary",
+            Self::Laps => "Laps",
+            Self::Charts => "Charts",
+            Self::Map => "Map",
+            Self::Notes => "Notes",
+        }
+    }
+
+    fn index(self) -> usize {
+        self as usize
+    }
+
+    fn step(self, by: isize) -> Self {
+        let n = Self::ALL.len() as isize;
+        Self::ALL[((self.index() as isize + by).rem_euclid(n)) as usize]
+    }
 }
 
 pub enum DetailEffect {
@@ -45,10 +80,13 @@ pub struct DetailScreen {
     lap: usize,
     lap_offset: Cell<usize>,
     viewport: Cell<usize>,
+    metric: Metric,
+    axis: XAxis,
 }
 
 impl DetailScreen {
     pub fn open(summary: ActivitySummary, ids: &mut RequestIds) -> (Self, Command) {
+        let sport = summary.sport;
         let mut screen = Self {
             summary,
             req: None,
@@ -61,6 +99,8 @@ impl DetailScreen {
             lap: 0,
             lap_offset: Cell::new(0),
             viewport: Cell::new(10),
+            metric: default_metric(sport),
+            axis: XAxis::Distance,
         };
         let command = screen.load(ids, false);
         (screen, command)
@@ -165,6 +205,8 @@ impl DetailScreen {
             KeyCode::Home | KeyCode::Char('g') => DetailMsg::Move(Move::Top),
             KeyCode::End | KeyCode::Char('G') => DetailMsg::Move(Move::Bottom),
             KeyCode::Char('c') => DetailMsg::CycleLapGroup,
+            KeyCode::Char('m') => DetailMsg::CycleMetric,
+            KeyCode::Char('x') => DetailMsg::ToggleAxis,
             KeyCode::Char('r') => DetailMsg::Refresh,
             _ => return None,
         })
@@ -173,15 +215,38 @@ impl DetailScreen {
     pub fn update(&mut self, msg: DetailMsg, ids: &mut RequestIds) -> Option<DetailEffect> {
         match msg {
             DetailMsg::Back => return Some(DetailEffect::Back),
-            DetailMsg::NextTab | DetailMsg::PrevTab => {
-                self.tab = match self.tab {
-                    DetailTab::Summary => DetailTab::Laps,
-                    DetailTab::Laps => DetailTab::Summary,
-                };
+            DetailMsg::NextTab => self.tab = self.tab.step(1),
+            DetailMsg::PrevTab => self.tab = self.tab.step(-1),
+            DetailMsg::CycleMetric => {
+                // First press just opens the Charts tab; later presses cycle.
+                if self.tab != DetailTab::Charts {
+                    self.tab = DetailTab::Charts;
+                } else if let Some(d) = &self.detail {
+                    let metrics = available_metrics(d);
+                    let i = metrics.iter().position(|m| *m == self.metric);
+                    if let Some(next) =
+                        i.map_or(metrics.first(), |i| metrics.get((i + 1) % metrics.len()))
+                    {
+                        self.metric = *next;
+                    }
+                }
+            }
+            DetailMsg::ToggleAxis => {
+                if self.tab != DetailTab::Charts {
+                    self.tab = DetailTab::Charts;
+                } else {
+                    self.axis = match self.axis {
+                        XAxis::Distance => XAxis::Time,
+                        XAxis::Time => XAxis::Distance,
+                    };
+                }
             }
             DetailMsg::Move(m) => {
-                if self.tab == DetailTab::Summary {
-                    self.tab = DetailTab::Laps; // moving only makes sense in the lap table
+                match self.tab {
+                    // Moving only makes sense in the lap table.
+                    DetailTab::Summary => self.tab = DetailTab::Laps,
+                    DetailTab::Laps => {}
+                    DetailTab::Charts | DetailTab::Map | DetailTab::Notes => return None,
                 }
                 let len = self.current_group().map_or(0, |g| g.laps.len());
                 if len > 0 {
@@ -248,11 +313,8 @@ impl DetailScreen {
 
         let [tabs_area, body] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(inner);
-        let tabs = Tabs::new(["Summary", "Laps"])
-            .select(match self.tab {
-                DetailTab::Summary => 0,
-                DetailTab::Laps => 1,
-            })
+        let tabs = Tabs::new(DetailTab::ALL.map(DetailTab::title))
+            .select(self.tab.index())
             .style(theme.tab)
             .highlight_style(theme.tab_active)
             .divider("│");
@@ -279,6 +341,9 @@ impl DetailScreen {
         match self.tab {
             DetailTab::Summary => self.render_summary(frame, body, detail, sport, theme),
             DetailTab::Laps => self.render_laps(frame, body, sport, theme),
+            DetailTab::Charts => render_charts(frame, body, detail, self.metric, self.axis, theme),
+            DetailTab::Map => render_map(frame, body, detail, theme),
+            DetailTab::Notes => render_notes(frame, body, detail, &self.summary, theme),
         }
     }
 
@@ -586,6 +651,25 @@ mod tests {
             panic!("retry reloads, skipping the cache");
         };
         assert!(s.error.is_none());
+    }
+
+    #[test]
+    fn first_m_or_x_opens_charts_without_changing_them() {
+        let (mut s, mut ids, req) = opened();
+        s.on_loaded(req, Box::new(testdata::detail()), testdata::now(), false);
+        let (metric, axis) = (s.metric, s.axis);
+        assert_eq!(metric, Metric::Pace, "runs start on pace");
+        s.update(DetailMsg::CycleMetric, &mut ids);
+        assert_eq!((s.tab, s.metric), (DetailTab::Charts, metric));
+        s.update(DetailMsg::CycleMetric, &mut ids);
+        assert_ne!(s.metric, metric);
+        s.tab = DetailTab::Map;
+        s.update(DetailMsg::ToggleAxis, &mut ids);
+        assert_eq!((s.tab, s.axis), (DetailTab::Charts, axis));
+        s.update(DetailMsg::ToggleAxis, &mut ids);
+        assert_eq!(s.axis, XAxis::Time);
+        s.update(DetailMsg::Move(Move::Down), &mut ids);
+        assert_eq!(s.tab, DetailTab::Charts, "arrows don't leave the chart");
     }
 
     #[test]

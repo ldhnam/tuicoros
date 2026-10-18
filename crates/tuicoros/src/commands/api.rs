@@ -150,11 +150,20 @@ pub async fn run(ctx: &Ctx<'_>, command: &ApiCommand) -> Result<()> {
                     .await
                     .map(|_| ());
             }
-            let days = client.day_detail(range).await?;
-            if json(output, &days)? {
+            let daily = client.day_detail(range).await?;
+            if json(output, &daily)? {
                 return Ok(());
             }
-            print_days(&days);
+            print_days(&daily.days);
+            for week in &daily.weeks {
+                println!(
+                    "Week of {}: load {} (recommended {}–{})",
+                    week.week_start,
+                    format::opt_f(week.training_load, 0),
+                    format::opt_f(week.recommended_min, 0),
+                    format::opt_f(week.recommended_max, 0)
+                );
+            }
         }
 
         ApiCommand::Dashboard { output } => {

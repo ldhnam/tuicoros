@@ -148,7 +148,16 @@ async fn activity_detail_outdoor_run() {
         Some(PerceivedExertion::Moderate)
     );
     assert_eq!(detail.feel.note.as_deref(), Some("Felt good"));
-    assert!(detail.weather.is_some());
+    let w = detail.weather.as_ref().unwrap();
+    assert_eq!(
+        (w.temperature_c, w.humidity_pct),
+        (Some(26.5), Some(70.0)),
+        "×10 values"
+    );
+    assert_eq!(
+        detail.samples[0].pace, None,
+        "synthetic samples carry no speed"
+    );
 
     assert_json_snapshot!(detail);
 }

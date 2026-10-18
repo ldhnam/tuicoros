@@ -110,8 +110,12 @@
       }
     ],
     "weather": {
-      "temperature": 2650,
-      "humidity": 70
+      "temperature": 265,
+      "bodyFeelTemp": 284,
+      "humidity": 700,
+      "windSpeed": 68,
+      "windDirection": 3380,
+      "weatherType": 12
     },
     "zoneList": [],
     "graphList": [],

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phases 0–1 are done; Phase 2 (MVP TUI: login, activities, detail) is code-complete, pending a live check. The docs in
+Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phases 0–3 are done (API client, CLI, TUI with Dashboard, Activities + detail with charts/map, Analysis). Next: Phase 4 (Calendar, Workouts). The docs in
 `docs/` are the source of truth; read the relevant one before changing code.
 
 - Roadmap and the current phase: `docs/PLAN.md` (tick checkboxes as work lands).

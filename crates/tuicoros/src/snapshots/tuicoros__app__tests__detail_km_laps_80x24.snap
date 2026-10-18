@@ -4,7 +4,7 @@ expression: "draw(&app, 80, 24).backend()"
 ---
 " 1 Dashboard │ 2 Activities │ 3 Analysis │ 4 Calendar │ 5 Workouts           US "
 "┌ Interval · Run · Sat 17 Oct 2026 06:00 (UTC+07:00) ──────────────────────────┐"
-"│ Summary │ Laps                                                               │"
+"│ Summary │ Laps │ Charts │ Map │ Notes                                        │"
 "│                                                                              │"
 "│ 1 km laps  (1 of 3 · c to switch)                                            │"
 "│                                                                              │"

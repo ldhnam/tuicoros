@@ -127,6 +127,19 @@ async fn steady_run_12k() {
     );
     assert!(d.samples.iter().filter(|x| x.heart_rate.is_some()).count() > d.samples.len() / 2);
     assert!(d.samples.iter().any(|x| x.other.contains_key("groundTime")));
+    // Per-second `speed` is pace in s/km for runs: the median sits near the 5:19 /km average.
+    let mut paces: Vec<f64> = d
+        .samples
+        .iter()
+        .filter_map(|x| x.pace.map(|p| p.0))
+        .collect();
+    paces.sort_by(f64::total_cmp);
+    let median = paces[paces.len() / 2];
+    assert!((300.0..340.0).contains(&median), "{median}");
+    assert!(
+        d.samples.iter().all(|x| !x.other.contains_key("speed")),
+        "moved into `pace`"
+    );
 }
 
 #[tokio::test]
@@ -169,6 +182,13 @@ async fn trail_run_elevation() {
         (s.min_elevation, s.max_elevation),
         (Some(58.0), Some(487.0))
     );
+    // Weather values are ×10.
+    let w = d.weather.as_ref().unwrap();
+    assert_eq!(
+        (w.temperature_c, w.feels_like_c, w.humidity_pct),
+        (Some(26.1), Some(28.4), Some(81.0))
+    );
+    assert_eq!(w.wind_direction_deg, Some(338.0));
 }
 
 #[tokio::test]
@@ -227,9 +247,23 @@ async fn day_detail() {
     )
     .await;
     let range = DateRange::new(date(2026, 10, 4), date(2026, 10, 18)).unwrap();
-    let days = signed_in(&server).day_detail(range).await.unwrap();
-    assert!(!days.is_empty());
-    assert!(days.windows(2).all(|w| w[0].date < w[1].date));
+    let daily = signed_in(&server).day_detail(range).await.unwrap();
+    assert!(!daily.days.is_empty());
+    assert!(daily.days.windows(2).all(|w| w[0].date < w[1].date));
+    // Weekly loads come with COROS's recommended range (the 2026-10-12 week: 678, 672–1008).
+    let week = daily
+        .weeks
+        .iter()
+        .find(|w| w.week_start == date(2026, 10, 12))
+        .unwrap();
+    assert_eq!(
+        (
+            week.training_load,
+            week.recommended_min,
+            week.recommended_max
+        ),
+        (Some(678.0), Some(672.0), Some(1008.0))
+    );
 }
 
 #[tokio::test]

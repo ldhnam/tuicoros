@@ -17,7 +17,10 @@ use tokio::sync::mpsc::UnboundedReceiver;
 use crate::action::{Action, RequestIds, UiErrorKind};
 use crate::event::{Event, Events};
 use crate::keymap::{self, Context};
+use crate::screens::LoadMeta;
 use crate::screens::activities::{ActivitiesScreen, Effect};
+use crate::screens::analysis::AnalysisScreen;
+use crate::screens::dashboard::{DashEffect, DashboardScreen};
 use crate::screens::detail::{DetailEffect, DetailScreen};
 use crate::screens::login::LoginScreen;
 use crate::service::{Command, DataService};
@@ -109,6 +112,8 @@ pub struct AppOptions {
     pub region: Region,
     pub page_size: u32,
     pub default_range_days: u32,
+    /// Analysis window: 4, 12 or 24 weeks.
+    pub analysis_weeks: u32,
     /// One-line footer message (e.g. a config warning).
     pub notice: Option<String>,
     /// Pre-filled on the login form.
@@ -130,8 +135,10 @@ pub struct App {
     /// (display name, region) once signed in.
     account: Option<(String, Region)>,
     login: Option<LoginScreen>,
+    dashboard: DashboardScreen,
     activities: ActivitiesScreen,
     detail: Option<DetailScreen>,
+    analysis: AnalysisScreen,
     help: bool,
     toasts: Vec<Toast>,
     ids: RequestIds,
@@ -145,11 +152,13 @@ impl App {
     pub fn new(theme: Theme, options: AppOptions, today: NaiveDate, now: DateTime<Utc>) -> Self {
         let login = LoginScreen::new(options.last_email.as_deref(), options.region, None);
         Self {
-            tab: Tab::Activities,
+            tab: Tab::Dashboard,
             running: true,
             dirty: true,
             theme,
+            dashboard: DashboardScreen::new(today),
             activities: ActivitiesScreen::new(options.page_size, options.default_range_days, today),
+            analysis: AnalysisScreen::new(options.analysis_weeks, today),
             options,
             account: None,
             login: Some(login),
@@ -166,14 +175,28 @@ impl App {
     pub fn signed_in(&mut self, who: String, region: Region) -> Vec<Command> {
         self.account = Some((who, region));
         self.login = None;
-        self.tab = Tab::Activities;
+        self.tab = Tab::Dashboard;
         self.dirty = true;
-        vec![self.activities.start(&mut self.ids, false)]
+        // The dashboard's "recent activities" come from the activity list.
+        let mut commands = vec![self.activities.start(&mut self.ids, false)];
+        commands.extend(self.enter_tab());
+        commands
+    }
+
+    /// Load a tab's data the first time it is shown.
+    fn enter_tab(&mut self) -> Vec<Command> {
+        match self.tab {
+            Tab::Dashboard => self.dashboard.on_enter(&mut self.ids),
+            Tab::Analysis => self.analysis.on_enter(&mut self.ids),
+            Tab::Activities | Tab::Calendar | Tab::Workouts => Vec::new(),
+        }
     }
 
     pub fn set_clock(&mut self, now: DateTime<Utc>, today: NaiveDate) {
         self.now = now;
         self.activities.set_today(today);
+        self.dashboard.set_today(today);
+        self.analysis.set_today(today);
     }
 
     /// Main loop: draw when dirty, wait for input or results, update, dispatch.
@@ -229,6 +252,16 @@ impl App {
         if let Some(login) = &self.login {
             return login.map_key(key).map(Action::Login);
         }
+        if self.tab == Tab::Dashboard
+            && let Some(msg) = self.dashboard.map_key(key)
+        {
+            return Some(Action::Dashboard(msg));
+        }
+        if self.tab == Tab::Analysis
+            && let Some(msg) = self.analysis.map_key(key)
+        {
+            return Some(Action::Analysis(msg));
+        }
         if self.tab == Tab::Activities {
             if let Some(detail) = &self.detail {
                 if let Some(msg) = detail.map_key(key) {
@@ -261,9 +294,48 @@ impl App {
             Action::Tick | Action::Resize => {}
             Action::Quit => self.running = false,
             Action::ToggleHelp => self.help = !self.help,
-            Action::SelectTab(tab) if self.login.is_none() => self.tab = tab,
-            Action::NextTab if self.login.is_none() => self.tab = self.tab.next(),
-            Action::PrevTab if self.login.is_none() => self.tab = self.tab.prev(),
+            Action::SelectTab(tab) if self.login.is_none() => {
+                self.tab = tab;
+                return self.enter_tab();
+            }
+            Action::NextTab if self.login.is_none() => {
+                self.tab = self.tab.next();
+                return self.enter_tab();
+            }
+            Action::PrevTab if self.login.is_none() => {
+                self.tab = self.tab.prev();
+                return self.enter_tab();
+            }
+            Action::Dashboard(msg) => {
+                let recent = self.activities.recent(5);
+                match self.dashboard.update(msg, &recent, &mut self.ids) {
+                    Some(DashEffect::Commands(commands)) => return commands,
+                    Some(DashEffect::Open(summary)) => {
+                        let (detail, command) = DetailScreen::open(*summary, &mut self.ids);
+                        self.detail = Some(detail);
+                        self.tab = Tab::Activities;
+                        return vec![command];
+                    }
+                    None => {}
+                }
+            }
+            Action::Analysis(msg) => return self.analysis.update(msg, &mut self.ids),
+            Action::Fetched {
+                req,
+                data,
+                fetched_at,
+                from_cache,
+                refreshing,
+            } => {
+                let meta = LoadMeta {
+                    fetched_at,
+                    from_cache,
+                    refreshing,
+                };
+                if let Some(data) = self.dashboard.offer(req, data, meta) {
+                    let _stale = self.analysis.offer(req, data, meta);
+                }
+            }
             Action::SelectTab(_) | Action::NextTab | Action::PrevTab => {}
 
             Action::Login(msg) => {
@@ -324,9 +396,14 @@ impl App {
                     .detail
                     .as_mut()
                     .is_some_and(|d| d.on_failed(req, error.clone()));
+                // Dashboard and Analysis show their errors inside the panel.
+                let mine_panel =
+                    self.dashboard.on_failed(req, &error) || self.analysis.on_failed(req, &error);
                 if error.kind == UiErrorKind::SessionExpired {
                     self.session_expired(&error.message);
-                } else if (mine_list && list_had_rows) || (!mine_list && !mine_detail) {
+                } else if (mine_list && list_had_rows)
+                    || (!mine_list && !mine_detail && !mine_panel)
+                {
                     // Errors the screen can't show inline become toasts.
                     self.toast(error.message);
                 }
@@ -363,13 +440,26 @@ impl App {
         self.login.as_ref().is_some_and(LoginScreen::is_submitting)
             || self.activities.is_loading()
             || self.detail.as_ref().is_some_and(DetailScreen::is_loading)
+            || self.dashboard.is_loading()
+            || self.analysis.is_loading()
     }
 
     fn context(&self) -> Context {
         if self.help {
             Context::Help
-        } else if self.login.is_some() {
+        } else {
+            self.screen_context()
+        }
+    }
+
+    /// The screen under any overlay.
+    fn screen_context(&self) -> Context {
+        if self.login.is_some() {
             Context::Login
+        } else if self.tab == Tab::Dashboard {
+            Context::Dashboard
+        } else if self.tab == Tab::Analysis {
+            Context::Analysis
         } else if self.tab != Tab::Activities {
             Context::Placeholder
         } else if self.detail.is_some() {
@@ -403,6 +493,12 @@ impl App {
                 Some(detail) => detail.render(frame, body, &self.theme, self.tick),
                 None => self.activities.render(frame, body, &self.theme, self.tick),
             }
+        } else if self.tab == Tab::Dashboard {
+            let recent = self.activities.recent(5);
+            self.dashboard
+                .render(frame, body, &self.theme, self.tick, &recent);
+        } else if self.tab == Tab::Analysis {
+            self.analysis.render(frame, body, &self.theme, self.tick);
         } else {
             self.render_placeholder(frame, body);
         }
@@ -499,13 +595,15 @@ impl App {
     }
 
     fn render_footer(&self, frame: &mut Frame, area: Rect) {
-        let freshness = if self.login.is_none() && self.tab == Tab::Activities {
-            match &self.detail {
+        let freshness = match (self.login.is_some(), self.tab) {
+            (true, _) => None,
+            (false, Tab::Activities) => match &self.detail {
                 Some(d) => d.freshness(self.now),
                 None => self.activities.freshness(self.now),
-            }
-        } else {
-            None
+            },
+            (false, Tab::Dashboard) => self.dashboard.freshness(self.now),
+            (false, Tab::Analysis) => self.analysis.freshness(self.now),
+            (false, Tab::Calendar | Tab::Workouts) => None,
         };
         let status = if self.login.as_ref().is_some_and(LoginScreen::is_submitting) {
             Span::styled(
@@ -578,14 +676,9 @@ impl App {
             }
             lines.push(Line::from(""));
         };
-        let context = if self.login.is_some() {
-            Context::Login
-        } else if self.tab != Tab::Activities {
-            Context::Placeholder
-        } else if self.detail.is_some() {
-            Context::Detail
-        } else {
-            Context::Activities
+        let context = match self.screen_context() {
+            Context::Search | Context::Filter => Context::Activities,
+            other => other,
         };
         section("This screen", keymap::for_context(context), &mut lines);
         if context == Context::Activities {
@@ -677,7 +770,10 @@ mod tests {
     use ratatui::backend::TestBackend;
 
     use super::*;
-    use crate::action::{ActivitiesMsg, DetailMsg, FilterMsg, LoginMsg, Move, RequestId, UiError};
+    use crate::action::{
+        ActivitiesMsg, DetailMsg, Fetched, FilterMsg, LoginMsg, Move, RequestId, UiError,
+    };
+    use crate::service::FetchKind;
     use crate::testdata;
 
     fn options() -> AppOptions {
@@ -685,9 +781,62 @@ mod tests {
             region: Region::Us,
             page_size: 20,
             default_range_days: 90,
+            analysis_weeks: 12,
             notice: None,
             last_email: None,
         }
+    }
+
+    /// Answer every `Fetch` command with test data.
+    fn deliver(app: &mut App, commands: Vec<Command>) {
+        for command in commands {
+            if let Command::Fetch { req, what, .. } = command {
+                let data = match what {
+                    FetchKind::Dashboard => Fetched::Dashboard(testdata::dashboard()),
+                    FetchKind::Daily(range) => Fetched::Daily(testdata::daily(range.days() as u32)),
+                    FetchKind::Schedule(_) => Fetched::Schedule(testdata::schedule()),
+                    FetchKind::Activities(_) => {
+                        Fetched::Activities((0..60).map(testdata::activity).collect())
+                    }
+                };
+                app.update(Action::Fetched {
+                    req,
+                    data: Box::new(data),
+                    fetched_at: testdata::now(),
+                    from_cache: false,
+                    refreshing: false,
+                });
+            }
+        }
+    }
+
+    /// Signed in on the Dashboard with everything loaded.
+    fn on_dashboard() -> App {
+        let mut app = signed_out();
+        let commands = app.update(Action::LoginSucceeded {
+            who: "Runner".into(),
+            region: Region::Us,
+        });
+        for c in &commands {
+            if let Command::LoadActivities { req, .. } = c {
+                app.update(Action::ActivitiesLoaded {
+                    req: *req,
+                    page: testdata::page(1, 20, 2),
+                    fetched_at: testdata::now(),
+                    from_cache: false,
+                    refreshing: false,
+                });
+            }
+        }
+        deliver(&mut app, commands);
+        app
+    }
+
+    fn on_analysis() -> App {
+        let mut app = on_dashboard();
+        let commands = app.update(Action::SelectTab(Tab::Analysis));
+        deliver(&mut app, commands);
+        app
     }
 
     fn signed_out() -> App {
@@ -704,23 +853,35 @@ mod tests {
             who: "Runner".into(),
             region: Region::Us,
         });
-        let Some(Command::LoadActivities { req, .. }) = commands.into_iter().next() else {
-            panic!("no load")
-        };
-        req
+        commands
+            .into_iter()
+            .find_map(|c| match c {
+                Command::LoadActivities { req, .. } => Some(req),
+                _ => None,
+            })
+            .expect("no activity load")
     }
 
     /// Signed in, with one page of activities loaded (from a 3-minute-old cache).
     fn browsing() -> App {
         let mut app = signed_out();
-        let req = sign_in(&mut app);
-        app.update(Action::ActivitiesLoaded {
-            req,
-            page: testdata::page(1, 20, 2),
-            fetched_at: testdata::now() - chrono::Duration::minutes(3),
-            from_cache: true,
-            refreshing: false,
+        let commands = app.update(Action::LoginSucceeded {
+            who: "Runner".into(),
+            region: Region::Us,
         });
+        for c in &commands {
+            if let Command::LoadActivities { req, .. } = c {
+                app.update(Action::ActivitiesLoaded {
+                    req: *req,
+                    page: testdata::page(1, 20, 2),
+                    fetched_at: testdata::now() - chrono::Duration::minutes(3),
+                    from_cache: true,
+                    refreshing: false,
+                });
+            }
+        }
+        deliver(&mut app, commands); // the dashboard's data, so nothing is left loading
+        app.update(Action::SelectTab(Tab::Activities));
         app
     }
 
@@ -808,8 +969,19 @@ mod tests {
             region: Region::Us,
         });
         assert!(app.login.is_none());
-        assert_eq!(app.tab, Tab::Activities);
-        assert!(matches!(&commands[..], [Command::LoadActivities { .. }]));
+        assert_eq!(app.tab, Tab::Dashboard, "lands on the dashboard");
+        assert!(
+            commands
+                .iter()
+                .any(|c| matches!(c, Command::LoadActivities { .. }))
+        );
+        assert_eq!(
+            commands
+                .iter()
+                .filter(|c| matches!(c, Command::Fetch { .. }))
+                .count(),
+            3
+        );
     }
 
     #[test]
@@ -990,6 +1162,8 @@ mod tests {
         app.update(Action::Activities(ActivitiesMsg::OpenFilter));
         check(&app, keymap::FILTER);
         check(&in_detail(), keymap::DETAIL);
+        check(&on_dashboard(), keymap::DASHBOARD);
+        check(&on_analysis(), keymap::ANALYSIS);
     }
 
     // ----- render snapshots (plain theme; styles don't show in text snapshots) -----
@@ -1096,9 +1270,63 @@ mod tests {
     #[test]
     fn snapshot_placeholder_tab_and_too_small() {
         let mut app = browsing();
-        press(&mut app, KeyCode::Char('1'));
-        insta::assert_snapshot!("dashboard_placeholder_80x24", draw(&app, 80, 24).backend());
+        press(&mut app, KeyCode::Char('4'));
+        insta::assert_snapshot!("calendar_placeholder_80x24", draw(&app, 80, 24).backend());
         insta::assert_snapshot!("too_small_40x12", draw(&app, 40, 12).backend());
+    }
+
+    #[test]
+    fn dashboard_and_analysis_flow() {
+        let mut app = on_dashboard();
+        assert_eq!(app.context(), Context::Dashboard);
+        assert!(!app.busy(), "everything delivered");
+        // Enter on a recent activity opens it on the Activities tab.
+        press(&mut app, KeyCode::Down);
+        let commands = press(&mut app, KeyCode::Enter);
+        assert!(matches!(&commands[..], [Command::LoadDetail { .. }]));
+        assert_eq!((app.tab, app.context()), (Tab::Activities, Context::Detail));
+
+        let mut app = on_analysis();
+        assert_eq!(app.context(), Context::Analysis);
+        let commands = press(&mut app, KeyCode::Char('['));
+        assert_eq!(
+            commands.len(),
+            2,
+            "daily metrics + activities for the earlier window"
+        );
+        assert!(app.busy());
+        // Switching tabs again doesn't reload.
+        assert!(app.update(Action::SelectTab(Tab::Dashboard)).is_empty());
+    }
+
+    #[test]
+    fn snapshot_dashboard_and_analysis() {
+        let app = on_dashboard();
+        insta::assert_snapshot!("dashboard_100x30", draw(&app, 100, 30).backend());
+        insta::assert_snapshot!("dashboard_80x24", draw(&app, 80, 24).backend());
+        let mut loading = signed_out();
+        loading.update(Action::LoginSucceeded {
+            who: "Runner".into(),
+            region: Region::Us,
+        });
+        insta::assert_snapshot!("dashboard_loading_80x24", draw(&loading, 80, 24).backend());
+        let app = on_analysis();
+        insta::assert_snapshot!("analysis_100x30", draw(&app, 100, 30).backend());
+        insta::assert_snapshot!("analysis_80x24", draw(&app, 80, 24).backend());
+    }
+
+    #[test]
+    fn snapshot_detail_charts_map_notes() {
+        let mut app = in_detail();
+        app.update(Action::Detail(DetailMsg::CycleMetric)); // jumps to Charts
+        insta::assert_snapshot!("detail_charts_100x30", draw(&app, 100, 30).backend());
+        app.update(Action::Detail(DetailMsg::ToggleAxis));
+        insta::assert_snapshot!("detail_charts_time_80x24", draw(&app, 80, 24).backend());
+        app.update(Action::Detail(DetailMsg::NextTab));
+        insta::assert_snapshot!("detail_map_100x30", draw(&app, 100, 30).backend());
+        insta::assert_snapshot!("detail_map_80x24", draw(&app, 80, 24).backend());
+        app.update(Action::Detail(DetailMsg::NextTab));
+        insta::assert_snapshot!("detail_notes_80x24", draw(&app, 80, 24).backend());
     }
 
     #[test]
@@ -1113,6 +1341,18 @@ mod tests {
         help.update(Action::ToggleHelp);
         let mut toast = browsing();
         toast.toast("A long error message that has to wrap or be cut somewhere sensible".into());
+        let detail_tab = |n: usize| {
+            let mut app = in_detail();
+            for _ in 0..n {
+                app.update(Action::Detail(DetailMsg::NextTab));
+            }
+            app
+        };
+        let mut loading_dashboard = signed_out();
+        loading_dashboard.update(Action::LoginSucceeded {
+            who: "R".into(),
+            region: Region::Us,
+        });
         let apps = [
             signed_out(),
             browsing(),
@@ -1122,6 +1362,12 @@ mod tests {
             laps,
             help,
             toast,
+            on_dashboard(),
+            loading_dashboard,
+            on_analysis(),
+            detail_tab(2),
+            detail_tab(3),
+            detail_tab(4),
         ];
         for app in &apps {
             for width in (0..=140).step_by(7) {

@@ -802,7 +802,7 @@ checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
 
 [[package]]
 name = "coros-api"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "insta",
@@ -3968,7 +3968,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "tuicoros"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "clap",
@@ -4559,7 +4559,7 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "serde_json",
 ]

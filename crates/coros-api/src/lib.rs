@@ -27,9 +27,9 @@ mod util;
 pub use account::Account;
 pub use activity::{
     ActivityDetail, ActivityQuery, ActivitySummary, DetailSummary, Feel, FileFormat, HrZone, Lap,
-    LapGroup, PerceivedExertion, Sample,
+    LapGroup, PerceivedExertion, Sample, Weather,
 };
-pub use analyse::{Analyse, DailyMetrics, WeekLoad};
+pub use analyse::{Analyse, Daily, DailyMetrics, WeekLoad};
 pub use auth::{Credentials, Session, md5_hex};
 pub use client::{ClientConfig, CorosClient, DEFAULT_USER_AGENT};
 pub use dashboard::{AbilityScores, Dashboard, HrvNight, HrvSummary};
