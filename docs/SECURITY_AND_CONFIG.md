@@ -7,7 +7,7 @@
 | Plaintext password         | High        | **Only in memory**, during login. Zeroized right after hashing. Never stored. |
 | `md5(password)`            | High: it can log in to COROS by itself | OS keychain, **only** if "Remember me" is on. |
 | Access token               | Medium (≈24 h lifetime) | OS keychain. Falls back to a `0600` file if no keychain is available (e.g. headless Linux). |
-| `userId`, email, region    | Low         | `state.toml` in the data dir                      |
+| `userId`, email, region    | Low         | Stored with the token (same place)                |
 | Activity data (GPS tracks) | Personal    | Cache dir. Never sent anywhere except COROS.      |
 
 Why store the MD5 hash instead of the password: COROS only ever sees `md5(password)`, so the hash is
@@ -27,12 +27,14 @@ other sites. It is still a login credential for COROS, so it stays in the keycha
    umask (usually `0644`), so they rely on the `0700` log directory for privacy.
 5. **Signed download URLs** from `activity/detail/download` are fetched *without* the token header,
    and are never logged in full (they are bearer URLs).
-6. **Env var overrides** for scripting and CI: `COROS_EMAIL`, `COROS_PASSWORD`, `COROS_REGION`, and
-   `COROS_ACCESS_TOKEN` (skips login). The docs warn that env vars are visible to other processes
-   owned by the same user.
+6. **Env var overrides** for scripting and CI: `COROS_EMAIL`, `COROS_PASSWORD`, `COROS_REGION`,
+   `COROS_ACCESS_TOKEN` (+ optional `COROS_USER_ID`) to skip login, and `TUICOROS_SECRETS=file` to
+   avoid the keychain. Env vars are visible to other processes owned by the same user.
+   `TUICOROS_API_BASE_URL` points every request at another server: **development only** (mock
+   servers). Never set it to a server you don't control, because the login request would go there.
 7. **Writes need confirmation.** Any future endpoint that changes the account (delete, schedule,
    create) shows a confirm dialog naming exactly what will change, and is never retried automatically.
-8. **Logout** removes the token, the hash and `state.toml`. `--purge` also deletes the cache.
+8. **Logout** removes the token and the hash. (A `--purge` option to also delete the cache comes with the cache in Phase 2.)
 9. **Fixtures are scrubbed** before they are committed (see [TESTING.md](TESTING.md#2-fixtures)). Real
    GPS tracks reveal where people live.
 
@@ -53,7 +55,7 @@ Resolved with `directories::ProjectDirs::from("dev", "tuicoros", "tuicoros")`.
 | Purpose | macOS                                              | Linux                              |
 | ------- | -------------------------------------------------- | ---------------------------------- |
 | Config  | `~/Library/Application Support/dev.tuicoros.tuicoros/config.toml` | `~/.config/tuicoros/config.toml` |
-| Data    | `~/Library/Application Support/dev.tuicoros.tuicoros/` (`state.toml`, logs) | `~/.local/share/tuicoros/` |
+| Data    | `~/Library/Application Support/dev.tuicoros.tuicoros/` (logs, `secrets.json` if the file backend is used) | `~/.local/share/tuicoros/` |
 | Cache   | `~/Library/Caches/dev.tuicoros.tuicoros/`          | `~/.cache/tuicoros/`               |
 
 `TUICOROS_CONFIG_DIR`, `TUICOROS_DATA_DIR` and `TUICOROS_CACHE_DIR` override these (handy in tests).
@@ -88,6 +90,9 @@ user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 [export]
 directory = "~/Downloads"
 default_format = "fit"      # fit | gpx | tcx | kml | csv
+
+[secrets]
+backend = "auto"            # "auto" (keychain, else file) | "keychain" | "file"; or TUICOROS_SECRETS
 
 [log]
 level = "info"              # also settable with TUICOROS_LOG=debug

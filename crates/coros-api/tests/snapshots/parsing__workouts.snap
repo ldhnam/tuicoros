@@ -1,0 +1,65 @@
+---
+source: crates/coros-api/tests/parsing.rs
+expression: w
+---
+[
+  {
+    "id": "w-1",
+    "name": "6x800 @ 3:50",
+    "sport_code": 1,
+    "estimated_time": 3300.0,
+    "training_load": 105,
+    "steps": [
+      {
+        "name": "Warm up",
+        "sets": 1,
+        "target": {
+          "kind": "time",
+          "seconds": 900.0
+        },
+        "intensity_low": null,
+        "intensity_high": null
+      },
+      {
+        "name": "Run",
+        "sets": 6,
+        "target": {
+          "kind": "distance",
+          "meters": 800.0
+        },
+        "intensity_low": 225.0,
+        "intensity_high": 235.0
+      },
+      {
+        "name": "Recover",
+        "sets": 6,
+        "target": {
+          "kind": "open"
+        },
+        "intensity_low": null,
+        "intensity_high": null
+      },
+      {
+        "name": "Cool down",
+        "sets": 1,
+        "target": {
+          "kind": "time",
+          "seconds": 600.0
+        },
+        "intensity_low": null,
+        "intensity_high": null
+      },
+      {
+        "name": "Mystery",
+        "sets": 1,
+        "target": {
+          "kind": "other",
+          "target_type": 9,
+          "value": 42.0
+        },
+        "intensity_low": null,
+        "intensity_high": null
+      }
+    ]
+  }
+]

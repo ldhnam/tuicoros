@@ -10,8 +10,8 @@ Read first: [ARCHITECTURE.md](ARCHITECTURE.md) · [COROS_API.md](COROS_API.md) �
 
 | Phase | Goal                                   | Ships                                                   | Size |
 | ----- | -------------------------------------- | ------------------------------------------------------- | ---- |
-| 0     | Project skeleton                       | Workspace, CI, logging, config, terminal safety         | S    |
-| 1     | **API client, proven live**            | `coros-api` crate + `tuicoros api …` debug CLI + fixtures | L  |
+| 0 ✅  | Project skeleton                       | Workspace, CI, logging, config, terminal safety         | S    |
+| 1 🟡  | **API client, proven live**            | `coros-api` crate + `tuicoros api …` debug CLI + fixtures | L  |
 | 2     | **MVP TUI**                            | Login, Activities list, Activity detail (Summary, Laps) | L    |
 | 3     | Insight screens                        | Dashboard, Analysis (EvoLab), detail Charts + Map + Notes | L  |
 | 4     | Planning screens                       | Calendar, Workout library (read-only)                   | M    |
@@ -85,51 +85,55 @@ proptest = "1"
 
 ---
 
-## Phase 1 — API client, proven live
+## Phase 1 — API client, proven live 🟡 (code done 2026-10-18 · live verification pending)
 
 The riskiest phase. **No UI work** until this phase's exit criteria are met.
 
 **Tasks**
 
 - [x] `Region` and base URLs (done in Phase 0).
-- [ ] Base URL override (for tests).
-- [ ] **Region auto-detect** at login: try the chosen region; on `1019` right after a successful
-      login, offer to retry the other regions. The owner's account is in **Asia**: two clients map
-      Asia to `teamcnapi`, but the official MCP routes "other regions" to the US cluster, so verify
-      `asia` first, then `us`.
-- [ ] `envelope.rs`: read text → JSON → `result` check → `data`; handle no-`data`, HTML/429, non-2xx.
-- [ ] `CorosError` as in ARCHITECTURE §4.
-- [ ] `auth.rs`: `md5` hex, `login()`, `Session { token, user_id, region }`, flexible `userId` decode.
-- [ ] `client.rs`: headers (`accesstoken`, `yfheader`, UA), semaphore (2), timeouts, backoff for
-      429/HTML, `Reauth` hook with one retry for idempotent requests only.
-- [ ] `units.rs` + `sport.rs` (all 60 sport values from COROS_API.md, plus `Unknown(u32)`).
-- [ ] Endpoints, each with `raw` + `model` + conversion:
-  - [ ] `account/query`
-  - [ ] `activity/query` (+ `all_activities()` paginator as a `Stream`)
-  - [ ] `activity/detail/query` (summary, laps, frequency series, feel info, zones)
-  - [ ] `activity/detail/download` → URL → bytes
-  - [ ] `analyse/query`, `analyse/dayDetail/query`
-  - [ ] `dashboard/query` (HRV part)
-  - [ ] `training/schedule/query`
-  - [ ] `training/program/query`
-- [ ] Token storage in `tuicoros` (keychain + file fallback); `tuicoros login|logout|status`.
-- [ ] `tuicoros api activities|activity|analyse|dashboard|schedule|workouts [--json|--raw]`.
-- [ ] `xtask scrub` for fixtures.
-- [ ] Capture and commit the fixtures listed in TESTING.md §2. **Runs first** (the owner's main
-      sport): outdoor run with GPS, treadmill run, interval workout with laps.
-- [ ] Unit, fixture and wiremock tests from TESTING.md §3–4.
-- [ ] Update COROS_API.md with anything that differed from the research (new error codes, field
-      names, param quirks). **Mark it "verified".**
+- [x] Base URL override: `ClientConfig::base_url` (tests) and `TUICOROS_API_BASE_URL` (dev only).
+- [x] **Region auto-detect** at login: tries the configured region, then `asia`, `us`, `eu`. A
+      region only counts if `account/query` works with the new token (COROS can accept a login on
+      the wrong region and then `1019` every call). `--region` / `COROS_REGION` = try only that one.
+- [x] `envelope.rs`: read text → JSON → `result` check → `data`; no-`data`, HTML/429, non-2xx.
+- [x] `CorosError` (Api, TokenInvalid, RateLimited, Http, Network, Unexpected, NotAuthenticated, InvalidInput).
+- [x] `auth.rs`: MD5, `login()`, `Session`, `userId` as string or number.
+- [x] `client.rs`: headers (`accesstoken`, `yfheader`, UA), semaphore (2), timeouts, backoff with
+      jitter for 429/5xx/timeouts, one re-login + retry on `1019` for reads only (writes never
+      retried), concurrent re-logins collapsed into one.
+- [x] `units.rs` + `sport.rs` (61 sports + `Unknown(u32)`).
+- [x] Endpoints. Each module keeps private `Raw*` types next to its public models (ADR-005):
+  - [x] `account/query`
+  - [x] `activity/query` + `all_activities()` (stops on empty page / total pages / limit)
+  - [x] `activity/detail/query` (summary, lap groups, samples, feel). HR zones are not modelled yet.
+  - [x] `activity/detail/download` → URL → bytes (token never sent to the file host)
+  - [x] `analyse/query`, `analyse/dayDetail/query` (84-day chunks, merged and de-duplicated)
+  - [x] `dashboard/query` (HRV part)
+  - [x] `training/schedule/query` (entries joined to workouts via `idInPlan`)
+  - [x] `training/program/query` (steps: time / distance / open / other)
+- [x] Secrets in `tuicoros`: keychain (`keyring` v4) with `0600` file fallback; `login`, `logout`, `status`.
+- [x] `tuicoros api account|activities|activity|download|analyse|daily|dashboard|schedule|workouts`
+      with human output, `--json` (converted) and `--raw` (untouched API data).
+- [x] `xtask scrub` (stable fake ids, GPS moved to a fake origin, URLs/tokens/notes removed, series thinned).
+- [x] Unit, fixture and wiremock tests: 129 tests, all offline. Plus a read-only live smoke test (`--ignored`).
+- [x] End-to-end run of the real binary against a local mock server (login, every `api`
+      command, auto re-login, logout; headers and log contents checked).
+- [ ] **Capture real fixtures** (needs the owner's login): runs first: outdoor run with GPS,
+      treadmill run, interval workout with laps. Scrub, commit next to the `synthetic_*` ones.
+- [ ] **Verify against the live API** and update COROS_API.md (mark "verified"). Open questions:
+      the Asia host; detail elevation/TE scaling; the HR field name in `frequencyList`; `ltsp` unit;
+      `trainSum` distance unit; workout distance scale; lap group `type` meanings.
 
 **Exit criteria**
 
-- On a real account: `tuicoros login` works; `tuicoros api activities --json` lists the last 90
-  days with correct km, pace and local start time (cross-checked by hand against t.coros.com for
-  3 activities of different sports).
-- `tuicoros api activity <id>` shows correct laps for a run and a ride.
-- Signing in on t.coros.com, then running a command, re-logs in transparently (with remember-me) or
-  asks to log in (without).
-- All tests green in CI with no network.
+- [ ] On a real account: `tuicoros login` works; `tuicoros api activities` lists the last 90
+      days with correct km, pace and local start time (cross-checked by hand against t.coros.com for
+      3 activities of different sports).
+- [ ] `tuicoros api activity <id>` shows correct laps for a run (and a ride, if there is one).
+- [ ] Signing in on t.coros.com, then running a command, re-logs in transparently (with remember-me) or
+      asks to log in (without). *(Proven against the mock server; needs a real check.)*
+- [x] All tests green with no network (locally; CI is switched off for now).
 
 ---
 

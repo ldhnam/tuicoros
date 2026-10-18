@@ -1,0 +1,127 @@
+---
+source: crates/coros-api/tests/parsing.rs
+expression: detail
+---
+{
+  "id": "476100000000000001",
+  "summary": {
+    "name": "Morning Run",
+    "sport": "run",
+    "start": "2026-10-18T06:42:00+07:00",
+    "end": "2026-10-18T07:35:40.130+07:00",
+    "distance": 10020.5,
+    "elapsed": 3220.0,
+    "moving": 3131.0,
+    "avg_pace": 312.45945811087273,
+    "avg_hr": 148,
+    "max_hr": 171,
+    "avg_cadence": 176,
+    "max_cadence": 190,
+    "avg_power": 262,
+    "max_power": 401,
+    "calories_kcal": 612.345,
+    "training_load": 78,
+    "elevation_gain": 84.0,
+    "aerobic_effect": 3.4,
+    "anaerobic_effect": 1.2,
+    "vo2max": 53.0
+  },
+  "lap_groups": [
+    {
+      "kind": 1,
+      "laps": [
+        {
+          "index": 1,
+          "distance": 1000.0,
+          "duration": 318.0,
+          "pace": 318.0,
+          "avg_hr": 140,
+          "max_hr": 150,
+          "avg_cadence": 174,
+          "avg_power": 250,
+          "elevation_gain": 5.0
+        },
+        {
+          "index": 2,
+          "distance": 1000.0,
+          "duration": 298.0,
+          "pace": 298.0,
+          "avg_hr": 152,
+          "max_hr": 160,
+          "avg_cadence": 178,
+          "avg_power": 270,
+          "elevation_gain": null
+        },
+        {
+          "index": 3,
+          "distance": 20.5,
+          "duration": 60.0,
+          "pace": null,
+          "avg_hr": null,
+          "max_hr": null,
+          "avg_cadence": null,
+          "avg_power": null,
+          "elevation_gain": null
+        }
+      ],
+      "fastest": [
+        1
+      ]
+    },
+    {
+      "kind": 2,
+      "laps": [
+        {
+          "index": 1,
+          "distance": 10020.5,
+          "duration": 3131.0,
+          "pace": 312.45945811087273,
+          "avg_hr": 148,
+          "max_hr": null,
+          "avg_cadence": null,
+          "avg_power": null,
+          "elevation_gain": null
+        }
+      ],
+      "fastest": []
+    }
+  ],
+  "samples": [
+    {
+      "time": "2026-10-17T23:42:00Z",
+      "lat": 47.4,
+      "lon": 8.5,
+      "other": {
+        "distance": 0.0,
+        "heart": 120.0,
+        "level": 1200.0
+      }
+    },
+    {
+      "time": "2026-10-17T23:42:10Z",
+      "lat": 47.40001,
+      "lon": 8.50001,
+      "other": {
+        "distance": 300.0,
+        "heart": 122.0
+      }
+    },
+    {
+      "time": "2026-10-17T23:42:20Z",
+      "lat": null,
+      "lon": null,
+      "other": {
+        "distance": 610.0,
+        "heart": 125.0
+      }
+    }
+  ],
+  "feel": {
+    "perceived_exertion": "moderate",
+    "note": "Felt good"
+  },
+  "weather": {
+    "humidity": 70,
+    "temperature": 2650
+  }
+}

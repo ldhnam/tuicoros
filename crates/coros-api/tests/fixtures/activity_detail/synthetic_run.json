@@ -1,0 +1,120 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "summary": {
+      "name": "Morning Run",
+      "sportType": 100,
+      "distance": 1002050,
+      "totalTime": 322000,
+      "workoutTime": 313100,
+      "startTimestamp": 179228052000,
+      "endTimestamp": 179228374013,
+      "timezone": 28,
+      "calories": 612345,
+      "avgHr": 148,
+      "maxHr": 171,
+      "avgCadence": 176,
+      "maxCadence": 190,
+      "avgPower": 262,
+      "maxPower": 401,
+      "trainingLoad": 78,
+      "elevGain": 84,
+      "aerobicEffect": 3.4,
+      "anaerobicEffect": 1.2,
+      "currentVo2Max": 53
+    },
+    "sportFeelInfo": {
+      "feelType": 3,
+      "sportNote": "Felt good",
+      "voiceNoteFileUuid": 0,
+      "voiceNoteStatus": 0,
+      "voiceNoteWavUrl": ""
+    },
+    "lapList": [
+      {
+        "type": 1,
+        "lapDistance": 100000,
+        "fastLapIndexList": [
+          1
+        ],
+        "lapItemList": [
+          {
+            "lapIndex": 1,
+            "distance": 100000,
+            "time": 31800,
+            "avgHr": 140,
+            "maxHr": 150,
+            "avgCadence": 174,
+            "avgPower": 250,
+            "elevGain": 5
+          },
+          {
+            "lapIndex": 2,
+            "distance": 100000,
+            "time": 29800,
+            "avgHr": 152,
+            "maxHr": 160,
+            "avgCadence": 178,
+            "avgPower": 270,
+            "elevGain": 0
+          },
+          {
+            "lapIndex": 3,
+            "distance": 2050,
+            "time": 6000,
+            "avgHr": 0,
+            "maxHr": 0,
+            "avgCadence": 0,
+            "avgPower": 0,
+            "elevGain": 0
+          }
+        ]
+      },
+      {
+        "type": 2,
+        "lapItemList": [
+          {
+            "lapIndex": 1,
+            "distance": 1002050,
+            "time": 313100,
+            "avgHr": 148
+          }
+        ]
+      }
+    ],
+    "frequencyList": [
+      {
+        "timestamp": 179228052000,
+        "gpsLat": 474000000,
+        "gpsLon": 85000000,
+        "distance": 0,
+        "heart": 120,
+        "level": 1200
+      },
+      {
+        "timestamp": 179228053000,
+        "gpsLat": 474000100,
+        "gpsLon": 85000100,
+        "distance": 300,
+        "heart": 122
+      },
+      {
+        "timestamp": 179228054000,
+        "gpsLat": 0,
+        "gpsLon": 0,
+        "distance": 610,
+        "heart": 125,
+        "note": "not a number"
+      }
+    ],
+    "weather": {
+      "temperature": 2650,
+      "humidity": 70
+    },
+    "zoneList": [],
+    "graphList": [],
+    "pauseList": []
+  }
+}

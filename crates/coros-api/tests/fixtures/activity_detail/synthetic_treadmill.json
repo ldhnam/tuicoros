@@ -1,0 +1,25 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "summary": {
+      "name": "Treadmill",
+      "sportType": 101,
+      "distance": 500000,
+      "totalTime": 180000,
+      "workoutTime": 180000,
+      "startTimestamp": 179190000000,
+      "timezone": 28,
+      "calories": 300000,
+      "avgHr": 0
+    },
+    "sportFeelInfo": {
+      "feelType": 0,
+      "sportNote": ""
+    },
+    "lapList": [],
+    "frequencyList": [],
+    "weather": null
+  }
+}

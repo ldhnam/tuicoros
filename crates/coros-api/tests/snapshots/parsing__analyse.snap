@@ -1,0 +1,97 @@
+---
+source: crates/coros-api/tests/parsing.rs
+expression: a
+---
+{
+  "days": [
+    {
+      "date": "2026-10-17",
+      "distance": 10020.0,
+      "duration": 3131.0,
+      "rhr": 48,
+      "test_rhr": 46,
+      "training_load": 78,
+      "load_impact": 71.2,
+      "base_fitness": 62.4,
+      "acute_load": 71.2,
+      "chronic_load": 62.4,
+      "load_ratio": 1.05,
+      "load_ratio_state": 2,
+      "fatigue": 38.0,
+      "fatigue_state": 2,
+      "performance": 63.0,
+      "recommended_load_min": 40.0,
+      "recommended_load_max": 90.0,
+      "avg_sleep_hrv": 52.0,
+      "sleep_hrv_baseline": 54.0,
+      "vo2max": null,
+      "lthr": null,
+      "lt_pace_raw": null,
+      "stamina_level": null,
+      "stamina_level_7d": null
+    },
+    {
+      "date": "2026-10-16",
+      "distance": null,
+      "duration": null,
+      "rhr": null,
+      "test_rhr": null,
+      "training_load": null,
+      "load_impact": null,
+      "base_fitness": null,
+      "acute_load": null,
+      "chronic_load": null,
+      "load_ratio": null,
+      "load_ratio_state": null,
+      "fatigue": null,
+      "fatigue_state": null,
+      "performance": null,
+      "recommended_load_min": null,
+      "recommended_load_max": null,
+      "avg_sleep_hrv": null,
+      "sleep_hrv_baseline": null,
+      "vo2max": null,
+      "lthr": null,
+      "lt_pace_raw": null,
+      "stamina_level": null,
+      "stamina_level_7d": null
+    }
+  ],
+  "rolling_7d": [
+    {
+      "date": "2026-10-18",
+      "distance": 10020.0,
+      "duration": 3131.0,
+      "rhr": 48,
+      "test_rhr": 46,
+      "training_load": 78,
+      "load_impact": 71.2,
+      "base_fitness": 62.4,
+      "acute_load": 71.2,
+      "chronic_load": 62.4,
+      "load_ratio": 1.05,
+      "load_ratio_state": 2,
+      "fatigue": 38.0,
+      "fatigue_state": 2,
+      "performance": 63.0,
+      "recommended_load_min": 40.0,
+      "recommended_load_max": 90.0,
+      "avg_sleep_hrv": 52.0,
+      "sleep_hrv_baseline": 54.0,
+      "vo2max": 53.0,
+      "lthr": 168,
+      "lt_pace_raw": 271.0,
+      "stamina_level": 82.5,
+      "stamina_level_7d": 80.0
+    }
+  ],
+  "weeks": [
+    {
+      "week_start": "2026-10-12",
+      "training_load": 310.0,
+      "recommended_min": 280.0,
+      "recommended_max": 420.0
+    }
+  ],
+  "model_valid": true
+}

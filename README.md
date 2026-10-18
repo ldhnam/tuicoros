@@ -5,8 +5,8 @@ A terminal UI for **COROS Training Hub** (<https://t.coros.com>), written in Rus
 Browse your activities, laps, heart-rate and pace charts, GPS tracks, EvoLab training load, HRV,
 training calendar and workout library without leaving the terminal.
 
-> **Status: Phase 0 done** (app skeleton: tabs, config, logging, CI). No COROS data yet. That
-> arrives in Phase 1. See [docs/PLAN.md](docs/PLAN.md).
+> **Status: Phase 1** (API client + command line). `tuicoros login` and `tuicoros api …` work;
+> the TUI screens are still placeholders (Phase 2). See [docs/PLAN.md](docs/PLAN.md).
 >
 > **Unofficial.** Not affiliated with or endorsed by COROS. The Training Hub API is private and
 > undocumented, so this tool may break at any time. Use it for your own account only.
@@ -39,12 +39,27 @@ training calendar and workout library without leaving the terminal.
 Rust (stable, edition 2024) · ratatui · crossterm · tokio · reqwest (rustls) · serde · chrono ·
 keyring · tracing. Tested with insta snapshots and wiremock.
 
+## Try it (Phase 1)
+
+```bash
+cargo run -p tuicoros -- login                    # email + password; finds your region
+cargo run -p tuicoros -- status                   # who you are, region, where secrets live
+cargo run -p tuicoros -- api activities           # last 90 days
+cargo run -p tuicoros -- api activities --sport run --from 2026-01-01 --all
+cargo run -p tuicoros -- api activity <ID>        # summary + laps (add --sport for non-runs)
+cargo run -p tuicoros -- api daily --from -28     # RHR, HRV, training load per day
+cargo run -p tuicoros -- api schedule             # training calendar
+cargo run -p tuicoros -- api download <ID> --format gpx
+cargo run -p tuicoros -- logout
+```
+
+Every `api` command also takes `--json` (converted data) or `--raw` (COROS's own JSON).
+
 ## Development
 
 ```bash
-cargo run -p tuicoros             # launch the (empty) TUI
-cargo run -p tuicoros -- status   # show config, paths, region
 cargo test --workspace            # all tests (no network needed)
+cargo run -p tuicoros             # the TUI (placeholder screens for now)
 ```
 
 ## Planned usage

@@ -1,0 +1,12 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "accessToken": "SYNTHETIC-TOKEN-NEW",
+    "userId": 123456789012,
+    "nickname": "Test Runner",
+    "email": "runner@example.invalid",
+    "headPic": "https://example.invalid/a.png"
+  }
+}

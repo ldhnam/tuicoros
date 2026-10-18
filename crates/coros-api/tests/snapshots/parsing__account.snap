@@ -1,0 +1,12 @@
+---
+source: crates/coros-api/tests/parsing.rs
+expression: account
+---
+{
+  "user_id": "123456789012",
+  "nickname": "Test Runner",
+  "email": "runner@example.invalid",
+  "avatar_url": "https://example.invalid/a.png",
+  "country_code": "XX",
+  "birthday": "1990-01-01"
+}

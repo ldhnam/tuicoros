@@ -5,11 +5,14 @@
 mod action;
 mod app;
 mod cli;
+mod commands;
 mod config;
 mod event;
+mod format;
 mod logging;
 mod paths;
 mod status;
+mod storage;
 mod theme;
 mod tui;
 
@@ -20,6 +23,7 @@ use color_eyre::Result;
 
 use crate::app::App;
 use crate::cli::{Cli, Command};
+use crate::commands::Ctx;
 use crate::config::LoadedConfig;
 use crate::event::Events;
 use crate::paths::Paths;
@@ -39,6 +43,7 @@ async fn main() -> Result<()> {
     let mut loaded = config::load(&config_path, &env)?;
     if let Some(region) = cli.region {
         loaded.config.region = region;
+        loaded.region_explicit = true;
     }
 
     // Logging failures are not fatal: the app still works without a log file.
@@ -59,12 +64,26 @@ async fn main() -> Result<()> {
         tracing::warn!("config: {warning}");
     }
 
-    match cli.command.unwrap_or_default() {
+    let ctx = Ctx {
+        paths: &paths,
+        loaded: &loaded,
+        cli_region: cli.region,
+    };
+    match cli.command.clone().unwrap_or_default() {
         Command::Tui => run_tui(&loaded).await,
         Command::Status => {
-            status::write_status(&mut std::io::stdout().lock(), &paths, &loaded)?;
+            let vault = ctx.vault();
+            let session = status::SessionInfo {
+                store: vault.describe(),
+                session: vault.session()?,
+                remembered: vault.credentials()?.is_some(),
+            };
+            status::write_status(&mut std::io::stdout().lock(), &paths, &loaded, &session)?;
             Ok(())
         }
+        Command::Login(args) => commands::login::run(&ctx, &args).await,
+        Command::Logout => commands::logout(&ctx),
+        Command::Api(command) => commands::api::run(&ctx, &command).await,
     }
 }
 

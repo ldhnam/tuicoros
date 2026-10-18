@@ -16,13 +16,21 @@ us safe. The UI is tested by rendering to an in-memory buffer and taking snapsho
 
 ## 2. Fixtures
 
-Fixtures are real API responses, scrubbed, stored in `crates/coros-api/tests/fixtures/<endpoint>/<case>.json`.
+Fixtures live in `crates/coros-api/tests/fixtures/<endpoint>/<case>.json`. Each one is a full
+response body (envelope included) that wiremock serves.
 
-Capture them with the debug CLI (Phase 1):
+- `synthetic_*.json`: **hand-written** from COROS_API.md. These exist today and cover every endpoint.
+- Real captures, scrubbed, sit next to them without the prefix. When the two disagree, the real
+  capture wins: fix the code and the docs.
+
+Capture real responses with the debug CLI. `--raw` prints only `data`, so wrap it in an envelope:
 
 ```bash
-tuicoros api activities --from 2026-09-01 --to 2026-09-30 --raw > /tmp/activities.json
-cargo run -p xtask -- scrub /tmp/activities.json > crates/coros-api/tests/fixtures/activity_query/run_month.json
+mkdir -p captures   # git-ignored
+tuicoros api activities --from -30 --raw \
+  | jq '{result:"0000",message:"OK",data:.}' > captures/activities.json
+cargo run -q -p xtask -- scrub captures/activities.json \
+  > crates/coros-api/tests/fixtures/activity_query/run_month.json
 ```
 
 The scrubber (`xtask scrub`) must:
@@ -110,7 +118,15 @@ insta::assert_snapshot!(terminal.backend());
 - Snapshots use fixed `now` (inject a `Clock`) and the `NO_COLOR` theme, so they are stable.
 - Review snapshot changes with `cargo insta review`.
 
-## 7. Live smoke tests (manual)
+## 7. End-to-end against a mock server
+
+`TUICOROS_API_BASE_URL` (dev only) sends every request to another server. Together with
+`TUICOROS_SECRETS=file` and the `TUICOROS_*_DIR` overrides, you can run the real binary through
+`login`, every `api` command and `logout` without touching COROS or the keychain. A tiny Python mock
+that serves the fixtures was used for the Phase 1 run. It also checked headers and that logs hold no
+secrets.
+
+## 8. Live smoke tests (manual)
 
 ```bash
 COROS_LIVE=1 COROS_EMAIL=… COROS_PASSWORD=… COROS_REGION=eu \
@@ -123,7 +139,10 @@ COROS_LIVE=1 COROS_EMAIL=… COROS_PASSWORD=… COROS_REGION=eu \
   (dates in range, distance ≥ 0, `labelId` not empty).
 - Run before each release and whenever a user reports a decode error.
 
-## 8. CI (`.github/workflows/ci.yml`)
+## 9. CI (`.github/workflows/ci.yml`)
+
+> CI is **disabled on GitHub** for now (owner's request). Re-enable with `gh workflow enable CI`.
+> Until then, run the same commands locally before pushing.
 
 On push and PR, for `ubuntu-latest` and `macos-latest`:
 
@@ -136,7 +155,7 @@ cargo deny check            # licenses + advisories (optional, from Phase 0)
 
 Plus an MSRV job that runs `cargo check` with the `rust-version` from `Cargo.toml`.
 
-## 9. Definition of done (per feature)
+## 10. Definition of done (per feature)
 
 - [ ] Fixtures for every new endpoint or response variant, scrubbed.
 - [ ] Unit tests for new conversions.

@@ -1,7 +1,8 @@
 # COROS Training Hub API — Reference Notes
 
-> **Status:** Researched 2026-10-18 from community clients. **Not yet verified against a live account
-> by this project.** Re-check every endpoint in Phase 1 (see [PLAN.md](PLAN.md)) before relying on it.
+> **Status:** Researched 2026-10-18 from community clients and implemented in `crates/coros-api`
+> (Phase 1). Parsing is tested against **synthetic** fixtures built from this document. **Not yet
+> verified against a live account.** See [§9 Verification status](#9-verification-status).
 
 COROS does **not** publish a public REST API. The Training Hub web app (<https://t.coros.com>) talks
 to a private JSON backend (`teamapi.coros.com` and its regional twins). Several open-source projects
@@ -109,7 +110,7 @@ The API is not consistent about scaling. Convert at the boundary (in `coros-api`
 | `activity/detail/query` `startTimestamp`, `endTimestamp`, lap timestamps, `frequencyList[].timestamp` | **centi**-scaled epoch seconds (÷100) | `DateTime` |
 | `calorie` (list) / `calories` (detail)   | calories, **not** centi-scaled        | kcal = ÷1000                        |
 | `startTimezone`, `endTimezone`, `timezone` | **quarter-hours** east of UTC (`8` = UTC+2) | fixed offset = value × 15 min |
-| `avgSpeed` (list)                        | **seconds per km** (a pace, despite the name) | pace                       |
+| `avgSpeed` (list)                        | **ambiguous**: s/km per one client, km/h ×100 for rides per another (depends on `speedType`) | **ignored**: pace = distance ÷ moving time |
 | GPS (`gpsLat`, `gpsLon`, `startGpsLat`, ...) | degrees × 1e7                     | degrees = ÷1e7                      |
 | `date`, `happenDay`, `startDay`, `firstDayInWeek` | `YYYYMMDD` as an **integer**   | `NaiveDate`                         |
 | `analyse/query` values                   | unscaled (metres, seconds, epoch s)   | —                                   |
@@ -118,6 +119,8 @@ The API is not consistent about scaling. Convert at the boundary (in `coros-api`
 | Workout step intensity with `intensityMultiplier == 1000` | value × 1000         | ÷1000                               |
 | `sportFeelInfo.feelType`                 | 1..5 (Very Light..Max Effort), `0` = unrated | `Option<PerceivedExertion>`  |
 | `sportFeelInfo.sportNote`                | `""` when unset                       | `Option<String>`                    |
+| `labelId`, `userId`, `idInPlan`, `happenDay` (schedule) | string **or** number, depending on endpoint | parse both          |
+| Numbers in general                       | sometimes JSON strings (`"48000"`)    | parse both                          |
 
 Other traps:
 
@@ -174,7 +177,7 @@ Notes:
 | FIT    | `4`        |
 
 Useful `ActivityListItem` fields: `labelId`, `name`, `sportType`, `date`, `startTime`, `endTime`,
-`startTimezone`, `distance`, `totalTime`, `workoutTime`, `avgSpeed` (s/km), `adjustedPace`, `avgHr`,
+`startTimezone`, `distance`, `totalTime`, `workoutTime`, `avgSpeed` (ambiguous, see §4), `adjustedPace`, `avgHr`,
 `avgCadence`, `avgPower`, `np`, `ascent`, `descent`, `calorie`, `trainingLoad`, `device`, `step`.
 
 Useful detail `summary` fields (centi-scaled where noted above): `name`, `sportType`, `distance`,
@@ -226,6 +229,18 @@ HRV list items (`dashboard/query` → `data.summaryInfo.sleepHrvData.sleepHrvLis
 | POST   | `training/schedule/update`     | versioned payload                                          | add / move workout on the calendar | W |
 
 An account with no plan gets the same envelope with empty `programs` and `daySummaries`.
+
+Calendar entries are in `entities[]`: each has `happenDay` (string **or** number) and `idInPlan`,
+which links to `programs[].idInPlan` (again string or number). Week totals are in
+`weekStages[].trainSum` (`planDistance`/`actualDistance` are strings).
+
+Workouts use their **own sport numbering**: `1` = run (all run variants), `2` = indoor bike,
+`4` = strength, `200` = road bike, `201` = indoor bike (alt). Not the activity `sportType`.
+
+Workout steps (`exercises[]`): `targetType` `2` = time (`targetValue` seconds), `5` = distance
+(`targetValue` metres ×100, and `intensityValue`/`intensityValueExtend` ×1000 when
+`intensityMultiplier` is `1000`), `1` = open/"until lap" (`targetValue` 0 means no cap). `sets`
+repeats the step.
 `TrainingProgram` has `id`, `name`, `sportType`, `duration`, `distance`, `trainingLoad`,
 `exerciseNum`, `totalSets`, and the structured definition in `essence` / `simple` / `overview`,
 whose shape varies by sport. Treat those as `serde_json::Value` until a sport-specific model is needed.
@@ -283,3 +298,27 @@ Community clients (read 2026-10-18):
 - Go: <https://github.com/mtzanidakis/coros-query> — headers (`yfheader`), token cache, re-login retry.
 - R: rCoros (CRAN) — US and EU support.
 - Official: <https://github.com/coroslab/COROS-MCP>.
+
+## 9. Verification status
+
+What `coros-api` assumes, and how sure we are. Update this table when a live capture confirms or
+contradicts something.
+
+| Assumption | Source | Status |
+| --- | --- | --- |
+| Login: `md5(password)`, `accountType: 2` | 4 clients | Tested (mock), **live pending** |
+| Headers `accesstoken` + `yfheader` | 2 clients | Tested (mock), **live pending** |
+| `1019` = token invalid | 3 clients | Tested (mock), **live pending** |
+| Asia accounts use `teamcnapi.coros.com` | 2 clients; official MCP suggests US | **Unknown**: login auto-detect tries `asia`, then `us`, `eu` |
+| List units plain, detail ×100 | Pinta365 (measured) | Tested (synthetic), **live pending** |
+| Detail `elevGain`, `aerobicEffect`, `anaerobicEffect` scale | none | **Unknown**: shown raw |
+| HR / speed / cadence field names in `frequencyList` | none | **Unknown**: kept in `Sample::other` so `api activity` lists them |
+| `ltsp` (threshold pace) unit | none | **Unknown**: kept as `lt_pace_raw` |
+| `trainSum` distance unit, program `distance` scale | none | **Unknown**: kept raw |
+| Lap group `type` values (auto vs manual) | none | **Unknown** |
+| `zoneList` (HR zones) shape | none | Not modelled yet (needed in Phase 3) |
+| Wrong-password result code | none | Unknown; handled as a generic API error |
+
+How to check: `tuicoros api <command> --raw` shows the untouched response, and
+`cargo run -p xtask -- scrub` turns it into a commit-safe fixture (docs/TESTING.md §2).
+

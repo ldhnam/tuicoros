@@ -1,0 +1,26 @@
+---
+source: crates/coros-api/tests/parsing.rs
+expression: hrv
+---
+{
+  "latest": {
+    "date": "2026-10-18",
+    "avg": 52.0,
+    "baseline": 54.0,
+    "std_dev": 4.0
+  },
+  "nights": [
+    {
+      "date": "2026-10-16",
+      "avg": null,
+      "baseline": 54.0,
+      "std_dev": null
+    },
+    {
+      "date": "2026-10-17",
+      "avg": 55.0,
+      "baseline": 54.0,
+      "std_dev": 4.0
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "dayList": [
+      {
+        "happenDay": 20261018,
+        "timestamp": 1792170000,
+        "distance": 10020,
+        "distanceTarget": 0,
+        "duration": 3131,
+        "durationTarget": 0,
+        "rhr": 48,
+        "testRhr": 46,
+        "t28d": 62.4,
+        "t7d": 71.2,
+        "ati": 71.2,
+        "cti": 62.4,
+        "tib": 0,
+        "trainingLoad": 78,
+        "trainingLoadTarget": 0,
+        "trainingLoadRatio": 1.05,
+        "trainingLoadRatioState": 2,
+        "tiredRateNew": 38,
+        "tiredRateStateNew": 2,
+        "performance": 63,
+        "recomendTlMin": 40,
+        "recomendTlMax": 90,
+        "avgSleepHrv": 52,
+        "sleepHrvBase": 54,
+        "sleepHrvIntervalList": [
+          48,
+          60
+        ],
+        "vo2max": 53,
+        "lthr": 168,
+        "ltsp": 271,
+        "staminaLevel": 82.5,
+        "staminaLevel7d": 80
+      },
+      {
+        "happenDay": 20261017,
+        "timestamp": 1792170000,
+        "distance": 10020,
+        "distanceTarget": 0,
+        "duration": 3131,
+        "durationTarget": 0,
+        "rhr": 48,
+        "testRhr": 46,
+        "t28d": 62.4,
+        "t7d": 71.2,
+        "ati": 71.2,
+        "cti": 62.4,
+        "tib": 0,
+        "trainingLoad": 78,
+        "trainingLoadTarget": 0,
+        "trainingLoadRatio": 1.05,
+        "trainingLoadRatioState": 2,
+        "tiredRateNew": 38,
+        "tiredRateStateNew": 2,
+        "performance": 63,
+        "recomendTlMin": 40,
+        "recomendTlMax": 90,
+        "avgSleepHrv": 52,
+        "sleepHrvBase": 54,
+        "sleepHrvIntervalList": [
+          48,
+          60
+        ]
+      }
+    ]
+  }
+}

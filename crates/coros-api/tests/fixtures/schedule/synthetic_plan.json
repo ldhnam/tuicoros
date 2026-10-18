@@ -1,0 +1,73 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "id": "plan-1",
+    "name": "10K plan",
+    "startDay": 20261012,
+    "endDay": 20261108,
+    "status": 1,
+    "maxIdInPlan": 3,
+    "entities": [
+      {
+        "happenDay": "20261017",
+        "idInPlan": "2",
+        "planProgramId": "2"
+      },
+      {
+        "happenDay": 20261013,
+        "idInPlan": 1,
+        "planProgramId": "1"
+      },
+      {
+        "happenDay": 20261019,
+        "idInPlan": "99"
+      },
+      {
+        "happenDay": "",
+        "idInPlan": "3"
+      }
+    ],
+    "programs": [
+      {
+        "id": "p-1",
+        "idInPlan": "1",
+        "name": "Easy 8k",
+        "sportType": 1,
+        "duration": 2880,
+        "distance": 800000,
+        "trainingLoad": 45,
+        "exerciseNum": 3
+      },
+      {
+        "id": "p-2",
+        "idInPlan": 2,
+        "name": "6x800 @ 3:50",
+        "sportType": 1,
+        "estimatedTime": 3300,
+        "distance": 0,
+        "trainingLoad": 105,
+        "exerciseNum": 4
+      }
+    ],
+    "weekStages": [
+      {
+        "firstDayInWeek": 20261012,
+        "stage": 1,
+        "planId": "plan-1",
+        "trainSum": {
+          "planDistance": "48000",
+          "actualDistance": "42300",
+          "planDuration": 18000,
+          "actualDuration": 15000,
+          "planTrainingLoad": 340,
+          "actualTrainingLoad": 310,
+          "planCount": 5,
+          "actualCount": 4
+        }
+      }
+    ],
+    "daySummaries": []
+  }
+}

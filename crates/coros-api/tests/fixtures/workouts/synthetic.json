@@ -1,0 +1,53 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": [
+    {
+      "id": "w-1",
+      "name": "6x800 @ 3:50",
+      "sportType": 1,
+      "estimatedTime": 3300,
+      "trainingLoad": 105,
+      "exerciseNum": 4,
+      "exercises": [
+        {
+          "name": "Warm up",
+          "targetType": 2,
+          "targetValue": 900,
+          "sets": 1,
+          "intensityValue": 0
+        },
+        {
+          "name": "Run",
+          "targetType": 5,
+          "targetValue": 80000,
+          "sets": 6,
+          "intensityValue": 225000,
+          "intensityValueExtend": 235000,
+          "intensityMultiplier": 1000
+        },
+        {
+          "name": "Recover",
+          "targetType": 1,
+          "targetValue": 0,
+          "sets": 6
+        },
+        {
+          "name": "Cool down",
+          "targetType": 2,
+          "targetValue": 600
+        },
+        {
+          "name": "Mystery",
+          "targetType": 9,
+          "targetValue": 42
+        }
+      ]
+    },
+    {
+      "id": "",
+      "name": "no id, skipped"
+    }
+  ]
+}

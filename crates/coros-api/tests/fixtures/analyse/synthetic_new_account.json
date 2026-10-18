@@ -1,0 +1,14 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "dayList": [],
+    "t7dayList": [],
+    "weekList": [],
+    "sportDataSummary": {
+      "count": 0,
+      "modelValidState": false
+    }
+  }
+}

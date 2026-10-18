@@ -39,32 +39,36 @@ tuicoros/
 │   │   │   ├── auth.rs           # Credentials, md5 password, Session { token, user_id, region }
 │   │   │   ├── envelope.rs       # { result, message, apiCode, tlogId, data } decoding
 │   │   │   ├── error.rs          # CorosError (thiserror)
-│   │   │   ├── endpoints/        # one module per API area; thin functions
-│   │   │   │   ├── account.rs
-│   │   │   │   ├── activity.rs
-│   │   │   │   ├── analyse.rs
-│   │   │   │   ├── dashboard.rs
-│   │   │   │   └── training.rs
-│   │   │   ├── raw/              # serde mirrors of the JSON, tolerant (#[serde(default)])
-│   │   │   ├── model/            # clean domain types with real units (see §5)
-│   │   │   ├── units.rs          # centi-scale, quarter-hour tz, YYYYMMDD, GPS 1e7, pace
-│   │   │   └── sport.rs          # SportType enum with Unknown(u32)
+│   │   │   ├── request.rs        # ApiRequest: method, path, query, body, idempotent?
+│   │   │   ├── account.rs        # one module per API area: request builders,
+│   │   │   ├── activity.rs       #   private Raw* JSON mirrors, public models,
+│   │   │   ├── analyse.rs        #   and `impl CorosClient { … }` methods
+│   │   │   ├── dashboard.rs
+│   │   │   ├── training.rs
+│   │   │   ├── util.rs           # Num / FlexStr: tolerant number + id parsing; secret masking
+│   │   │   ├── units.rs          # centi-scale, quarter-hour tz, YYYYMMDD, GPS 1e7, pace, newtypes
+│   │   │   └── sport.rs          # SportType (61 sports) + Unknown(u32)
 │   │   └── tests/
-│   │       ├── fixtures/         # scrubbed real JSON responses
-│   │       └── *.rs              # wiremock + fixture tests
+│   │       ├── fixtures/         # synthetic_* (hand-written) + scrubbed real responses
+│   │       ├── parsing.rs        # every fixture through the client → models (+ insta snapshots)
+│   │       ├── client_behaviour.rs  # headers, re-login, retries, limits (wiremock)
+│   │       └── live.rs           # #[ignore] read-only smoke test against the real API
 │   └── tuicoros/                 # binary
 │       └── src/
 │           ├── main.rs           # clap parse → setup logging, config → run subcommand
 │           ├── cli.rs            # subcommands: (default) tui, login, logout, status, api …
+│           ├── commands/         # non-TUI commands: login (region auto-detect), logout, api …
+│           ├── status.rs         # `tuicoros status`
 │           ├── tui.rs            # terminal enter/restore, panic + error hooks
 │           ├── event.rs          # EventStream + tick + render timer → Event
 │           ├── action.rs         # Action enum (the only way state changes)
 │           ├── app.rs            # App: state, update(action), render dispatch
 │           ├── service.rs        # DataService: runs API calls in tasks, talks to cache
+│           ├── config.rs         # config.toml + env + CLI
 │           ├── storage/
-│           │   ├── config.rs     # config.toml
-│           │   ├── secrets.rs    # keychain access (password hash, token)
-│           │   └── cache.rs      # on-disk cache (JSON files in v1, SQLite later)
+│           │   ├── secrets.rs    # SecretStore: keychain, or 0600 file fallback
+│           │   ├── vault.rs      # stored session (token, user, region) + optional password hash
+│           │   └── cache.rs      # (Phase 2) on-disk cache (JSON files in v1, SQLite later)
 │           ├── screens/          # one module per screen (see UI_DESIGN.md)
 │           │   ├── login.rs
 │           │   ├── dashboard.rs
@@ -158,50 +162,61 @@ top-level tabs. Global keys (quit, help, tab switch) are handled by `App` before
 ## 4. API client (`coros-api`)
 
 ```rust
-pub struct CorosClient { http: reqwest::Client, region: Region, session: RwLock<Option<Session>>,
-                         reauth: Option<Arc<dyn Reauth>>, limiter: Semaphore }
+pub struct CorosClient { http, base_url, region, session: RwLock<Option<Session>>,
+                         credentials: Option<Credentials>, listener: Option<SessionListener>,
+                         limiter: Semaphore, relogin_lock: Mutex<()>, … }
+
+let client = CorosClient::new(ClientConfig::new(region))?
+    .with_session(stored_session)          // from the vault
+    .with_credentials(stored_hash)         // optional: enables auto re-login
+    .on_session_change(|s| save_token(s)); // persist refreshed tokens
 
 impl CorosClient {
     pub async fn login(&self, creds: &Credentials) -> Result<Session>;
     pub async fn account(&self) -> Result<Account>;
     pub async fn activities(&self, q: &ActivityQuery) -> Result<Page<ActivitySummary>>;
     pub async fn activity_detail(&self, id: &LabelId, sport: SportType) -> Result<ActivityDetail>;
-    pub async fn activity_download_url(&self, id: &LabelId, sport: SportType, fmt: FileFormat) -> Result<Url>;
-    pub async fn analyse(&self, range: DateRange) -> Result<Analyse>;
+    pub async fn activity_file_url(&self, id: &LabelId, sport: SportType, fmt: FileFormat) -> Result<String>;
+    pub async fn download_activity_file(&self, id: &LabelId, sport: SportType, fmt: FileFormat) -> Result<Vec<u8>>;
+    pub async fn analyse(&self, range: Option<DateRange>) -> Result<Analyse>;
     pub async fn day_detail(&self, range: DateRange) -> Result<Vec<DailyMetrics>>;
     pub async fn dashboard(&self) -> Result<Dashboard>;
     pub async fn schedule(&self, range: DateRange) -> Result<Schedule>;
     pub async fn workouts(&self) -> Result<Vec<Workout>>;
+    pub async fn send_raw(&self, req: &ApiRequest) -> Result<Option<Value>>; // untyped, for --raw
 }
 ```
 
-- **One request path** (`send<T>()`) does: acquire semaphore → add headers → send → read text →
-  decode envelope → map errors → on `1019` call `Reauth` once and retry if the request is idempotent.
-- `Reauth` is a trait the binary implements. It loads the stored password hash from the keychain and
-  logs in again. If no credentials are stored, the error surfaces and the UI shows the login screen.
+- **One request path** (`send_raw()`) does: acquire semaphore → add headers → send → read text →
+  decode envelope → map errors → on `1019`, if credentials are set and the request is idempotent,
+  log in once (concurrent callers share one re-login) and retry once → on 429/5xx/timeouts, back
+  off and retry reads up to 3 times. Writes are never retried.
+- Without stored credentials a `1019` surfaces as `TokenInvalid`; the CLI says "run `tuicoros
+  login`", and the TUI (Phase 2) will show the login screen.
 - Errors:
 
 ```rust
 pub enum CorosError {
-    Api { result: String, message: String, tlog_id: Option<String> },  // result != "0000"
-    TokenInvalid { region: Region },                                   // 1019 after re-auth
-    RateLimited { retry_after: Option<Duration> },                     // 429 or HTML body
-    Http { status: StatusCode, body_snippet: String },
-    Network(reqwest::Error),
-    Decode { endpoint: &'static str, source: serde_json::Error, body_snippet: String },
+    Api { endpoint, result, message, tlog_id },  // result != "0000"
+    TokenInvalid { region },                     // 1019 (after the one re-login, if any)
+    RateLimited,                                 // HTTP 429
+    Http { endpoint, status, body_snippet },     // non-2xx without a usable envelope
+    Network { endpoint, source: reqwest::Error },
+    Unexpected { endpoint, detail, body_snippet }, // not JSON, wrong shape, missing data
     NotAuthenticated,
+    InvalidInput(String),                        // rejected before any request is sent
 }
 ```
 
-- `Decode` errors keep the endpoint name and the first 500 bytes of the body (scrubbed) so schema
-  drift is easy to debug from logs.
+- `Unexpected` errors keep the endpoint name and the first 300 characters of the body (tokens,
+  emails and URLs masked), so schema drift is easy to debug from logs.
 
 ## 5. Two-layer models: `raw` and `model`
 
 The API's JSON is messy (zero-filled fields, centi-scaling, strings for numbers, ~150 fields per
 activity). We keep that mess in one place:
 
-- **`raw::*`** mirrors the JSON exactly. Field names follow the API (`#[serde(rename_all = "camelCase")]`),
+- **`Raw*` types** (private, one set per API module) mirror the JSON exactly. Field names follow the API (`#[serde(rename_all = "camelCase")]`),
   every field is `Option` or `#[serde(default)]`, and unknown fields are ignored. These types are
   `pub(crate)`.
 - **`model::*`** is what the rest of the program sees. Converting `raw → model` goes through

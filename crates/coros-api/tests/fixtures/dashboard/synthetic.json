@@ -1,0 +1,33 @@
+{
+  "apiCode": "8D2DB17A",
+  "result": "0000",
+  "message": "OK",
+  "data": {
+    "summaryInfo": {
+      "sleepHrvData": {
+        "happenDay": 20261018,
+        "avgSleepHrv": 52,
+        "sleepHrvBase": 54,
+        "sleepHrvSd": 4,
+        "sleepHrvAllIntervalList": [
+          48,
+          60
+        ],
+        "sleepHrvList": [
+          {
+            "happenDay": 20261017,
+            "avgSleepHrv": 55,
+            "sleepHrvBase": 54,
+            "sleepHrvSd": 4
+          },
+          {
+            "happenDay": 20261016,
+            "avgSleepHrv": 0,
+            "sleepHrvBase": 54,
+            "sleepHrvSd": 0
+          }
+        ]
+      }
+    }
+  }
+}

@@ -11,7 +11,9 @@ use coros_api::Region;
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::EnvFilter;
 
-pub const DEFAULT_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36";
+use crate::storage::secrets::SecretsBackend;
+
+pub const DEFAULT_USER_AGENT: &str = coros_api::DEFAULT_USER_AGENT;
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -22,7 +24,15 @@ pub struct Config {
     pub analysis: AnalysisConfig,
     pub network: NetworkConfig,
     pub export: ExportConfig,
+    pub secrets: SecretsConfig,
     pub log: LogConfig,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SecretsConfig {
+    /// `auto` (keychain, falling back to a private file), `keychain` or `file`.
+    pub backend: SecretsBackend,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -175,6 +185,9 @@ pub struct LoadedConfig {
     pub file_found: bool,
     /// Non-fatal problems (e.g. unknown keys), shown to the user and logged.
     pub warnings: Vec<String>,
+    /// The region came from `--region` or `COROS_REGION`, not the file/default.
+    /// `tuicoros login` then tries only that region.
+    pub region_explicit: bool,
 }
 
 /// Load `path` (a missing file means defaults), apply env overrides, validate.
@@ -192,13 +205,14 @@ pub fn load(path: &Path, env: &impl Fn(&str) -> Option<String>) -> Result<Loaded
                 .wrap_err_with(|| format!("cannot read config file {}", path.display()));
         }
     };
-    config.apply_env(env)?;
+    let region_explicit = config.apply_env(env)?;
     config.validate()?;
     Ok(LoadedConfig {
         config,
         path: path.to_path_buf(),
         file_found,
         warnings,
+        region_explicit,
     })
 }
 
@@ -216,15 +230,24 @@ pub fn parse(text: &str, warnings: &mut Vec<String>) -> Result<Config> {
 }
 
 impl Config {
-    /// Apply `COROS_REGION` and `TUICOROS_LOG`.
-    pub fn apply_env(&mut self, env: &impl Fn(&str) -> Option<String>) -> Result<()> {
+    /// Apply `COROS_REGION`, `TUICOROS_LOG` and `TUICOROS_SECRETS`.
+    /// Returns whether the region was set by the environment.
+    pub fn apply_env(&mut self, env: &impl Fn(&str) -> Option<String>) -> Result<bool> {
+        let mut region_set = false;
         if let Some(region) = env("COROS_REGION").filter(|v| !v.is_empty()) {
             self.region = region.parse().wrap_err("COROS_REGION")?;
+            region_set = true;
         }
         if let Some(level) = env("TUICOROS_LOG").filter(|v| !v.is_empty()) {
             self.log.level = level;
         }
-        Ok(())
+        if let Some(backend) = env("TUICOROS_SECRETS").filter(|v| !v.is_empty()) {
+            self.secrets.backend = backend
+                .parse()
+                .map_err(color_eyre::eyre::Report::msg)
+                .wrap_err("TUICOROS_SECRETS")?;
+        }
+        Ok(region_set)
     }
 
     /// Reject values that would break the app later. Reports every problem at once.
@@ -309,6 +332,9 @@ user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 directory = "~/Downloads"
 default_format = "fit"
 
+[secrets]
+backend = "auto"
+
 [log]
 level = "info"
 "#;
@@ -388,15 +414,18 @@ level = "info"
         let env = |key: &str| match key {
             "COROS_REGION" => Some("cn".to_owned()),
             "TUICOROS_LOG" => Some("debug".to_owned()),
+            "TUICOROS_SECRETS" => Some("file".to_owned()),
             _ => None,
         };
         let mut config = Config {
             region: Region::Eu,
             ..Config::default()
         };
-        config.apply_env(&env).unwrap();
+        assert!(config.apply_env(&env).unwrap(), "region came from env");
         assert_eq!(config.region, Region::Asia);
         assert_eq!(config.log.level, "debug");
+        assert_eq!(config.secrets.backend, SecretsBackend::File);
+        assert!(!Config::default().apply_env(&|_: &str| None).unwrap());
     }
 
     #[test]
