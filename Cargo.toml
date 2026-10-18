@@ -12,7 +12,7 @@ publish = false
 [workspace.dependencies]
 coros-api = { path = "crates/coros-api" }
 
-reqwest = { version = "0.13", features = ["json", "query"] }
+reqwest = { version = "0.13", features = ["json", "query", "gzip", "deflate", "brotli"] }
 serde_json = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
 md-5 = "0.11"

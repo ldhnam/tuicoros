@@ -1,8 +1,10 @@
 # COROS Training Hub API — Reference Notes
 
-> **Status:** Researched 2026-10-18 from community clients and implemented in `crates/coros-api`
-> (Phase 1). Parsing is tested against **synthetic** fixtures built from this document. **Not yet
-> verified against a live account.** See [§9 Verification status](#9-verification-status).
+> **Status:** Researched from community clients, implemented in `crates/coros-api`, and
+> **verified against a live account on 2026-10-18** (a Vietnam-based account on the `us` server).
+> Where the community notes were wrong, this document now says so. See
+> [§9 Verification status](#9-verification-status). Real scrubbed responses live in
+> `crates/coros-api/tests/fixtures/*/real*.json`.
 
 COROS does **not** publish a public REST API. The Training Hub web app (<https://t.coros.com>) talks
 to a private JSON backend (`teamapi.coros.com` and its regional twins). Several open-source projects
@@ -28,9 +30,10 @@ Gotchas:
 - **Region is not geography.** Login can *succeed* against the wrong region and then every following
   call fails with `1019` (access token invalid). At least one German account had to use `us`. When
   auth breaks with a fresh token, suspect the region first and show that hint in the UI.
-- **Asia is unclear.** `coros-mcp` and `coros-training-mcp` send Asia accounts to `teamcnapi`, but
-  the official MCP routes everything except mainland China and Europe to the US cluster. Phase 1
-  checks this with a real Asia account (try `asia`, then `us`) and records the answer here.
+- **Asia (outside mainland China) uses `us`.** Verified: a Vietnam account lives on
+  `teamapi.coros.com`. That matches the official MCP ("United States and other regions"). Two
+  community clients map "asia" to `teamcnapi`; that is probably right only for mainland China.
+  `tuicoros login` tries the configured region first, then `asia`, `us`, `eu`.
 - The app should store the region with the token and let the user switch it on the login screen.
 
 ## 2. Response envelope
@@ -163,8 +166,9 @@ Notes:
 - Paginate until a page is empty or `pageNumber >= totalPage`, so a bad `totalPage` can't loop forever.
 - `activity/delete` returns success even for an id that never existed. A success is **not** proof of
   deletion.
-- Detail responses are large. `frequencyList` has one sample per second or so (thousands of points
-  for a 2-hour activity). Downsample before charting and before caching.
+- Detail responses are large (a 1-hour run ≈ 2 MB) and are **gzip-compressed even when the
+  request doesn't ask for it**. The HTTP client must decompress (reqwest `gzip` feature).
+  `frequencyList` has exactly one sample per second. Downsample before charting and caching.
 
 `fileType` values:
 
@@ -185,9 +189,35 @@ Useful detail `summary` fields (centi-scaled where noted above): `name`, `sportT
 `maxHr`, `avgCadence`, `maxCadence`, `avgPace`, `avgSpeed`, `maxSpeed`, `avgPower`, `maxPower`,
 `trainingLoad`, `aerobicEffect`, `anaerobicEffect`, `currentVo2Max`, `elevGain`, `minElev`, `maxElev`.
 
-`lapList` is a list of **lap groupings** (auto-lap by distance, manual laps, ...) told apart by
-`type`. Each has `lapItemList` with per-lap `distance`, `time`, `avgHr`, `maxHr`, `avgPace`,
-`avgCadence`, `avgPower`, `elevGain`, GPS start/end, and more.
+In the detail `summary`, only `distance`, `totalTime`, `workoutTime` and the timestamps are ×100.
+`elevGain`, `totalDescent`, `maxElev`, `minElev` are plain metres (`0` = no altitude data).
+`aerobicEffect`/`anaerobicEffect` are plain (0–5). `currentVo2Max` is plain. `bestKm` and
+`adjustedPace` are s/km. `avgStepLen` is stride length in cm. `calories` is calories (÷1000 = kcal).
+
+`lapList` is a list of **lap groupings** told apart by `type`, each with a `lapDistance` (×100 m)
+and its own `lapItemList`:
+
+| `type` | Meaning (verified) | `lapDistance` |
+| ------ | ------------------ | ------------- |
+| `2`    | Auto laps (e.g. every 1 km). For strength: one lap per set | `100000` = 1 km |
+| `10`   | **Workout steps**: one lap per step of a structured workout | per step |
+| `11`, `12` | Longer segments (5 km, 10 km) | `500000`, `1000000` |
+| `-1`   | The whole activity | the total |
+
+Lap items: `distance` and `time` ×100, `avgPace` s/km, `avgHr`, `maxHr`, `avgCadence`, `avgPower`,
+`elevGain`, GPS start/end. **Workout-step laps (`type 10`) have no `distance`**. They carry
+`avgMoveSpeed` (pace, s/km), `targetType`/`targetValue` (the plan) and `exerciseType`
+(`2` = rep, `4` = recovery). Distance = time ÷ pace.
+
+`zoneList[]`: zone groups. `type: 126` = heart-rate zones: `zoneItemList[]` of `zoneIndex` (0–5;
+0 = below zone 1, sent with zone 1's bounds), `leftScope`/`rightScope` (bpm), `second`, `percent`.
+`type: 130` = pace zones (scopes in s/km ×1000, not modelled yet).
+
+`frequencyList[]` (one per second): `timestamp` (×100 epoch s), `distance` (×100 m, cumulative),
+`heart` (bpm), `cadence` (spm), `power` (W), `altitude` (m), `speed` and `adjustedPace` (s/km for
+runs), `cadenceLength` (stride, cm), `groundTime` (ms), `verticalVibration`,
+`verticalStrideRatio`, `slope`, `heartLevel` (zone), `gpsLat`/`gpsLon` (×1e7), and `levelMap`
+(an object, per-field quality flags).
 
 ### EvoLab / analytics
 
@@ -200,19 +230,33 @@ Useful detail `summary` fields (centi-scaled where noted above): `name`, `sportT
 These endpoints are **GET only**. POST answers `1001`. Note the param names are `startDay`/`endDay`
 here but `startDate`/`endDate` on the training schedule.
 
-`AnalyseDay` fields (per day): `happenDay`, `timestamp`, `distance`, `duration`, `rhr`, `testRhr`,
-`t7d` (Load Impact), `t28d` (Base Fitness), `ati` (acute), `cti` (chronic), `trainingLoad`,
-`trainingLoadRatio`, `trainingLoadRatioState`, `trainingLoadRatioZoneList`, `tiredRateNew`
-(fatigue), `tiredRateStateNew`, `tiredRateNewZoneList`, `performance`, `recomendTlMin/Max`,
-`avgSleepHrv`, `sleepHrvBase`, `sleepHrvIntervalList`, `vo2max`, `lthr`, `ltsp`, `staminaLevel`,
-`staminaLevel7d`. Days with no watch data carry only the required fields.
+`AnalyseDay` fields (per day): `happenDay`, `timestamp`, `rhr`, `testRhr`, `trainingLoad`,
+`t7d`, `t28d`, `ati`, `cti`, `trainingLoadRatio` (+`State`, `ZoneList`), `tiredRateNew`
+(+`StateNew`, `NewZoneList`), `tiredRate`, `tib`, `performance`, `recomendTlMin/Max`, `vo2max`,
+`lthr`, `ltsp`, `staminaLevel`, `staminaLevel7d`, `distance`/`duration` (**always 0** in practice).
+
+Verified meanings (**the community notes had the first two wrong**):
+
+- `t7d` / `t28d` = **total training load of the last 7 / 28 days**, not "Load Impact" / "Base
+  Fitness". `t7d` equals the week's actual load in the training calendar.
+- `ati` = acute load, `cti` = chronic load (fitness), `trainingLoadRatio` = `ati ÷ cti`,
+  `tiredRateNew` (fatigue) = `ati − cti` (negative = fresh).
+- `ltsp` = lactate-threshold pace in s/km (`280` = 4:40 /km). `lthr` = threshold HR.
+- `performance`: small integers (e.g. `2`). Scale unknown.
 
 `sportDataSummary.modelValidState == false` means EvoLab doesn't have enough data yet. Show an
 "insufficient data" state rather than zeros.
 
-HRV list items (`dashboard/query` → `data.summaryInfo.sleepHrvData.sleepHrvList[]`): `happenDay`,
-`avgSleepHrv`, `sleepHrvBase`, `sleepHrvSd`, `sleepHrvIntervalList`. Today's values sit on
-`sleepHrvData` itself.
+`dashboard/query` → `summaryInfo`: `recoveryPct`, `fullRecoveryHours`, `recoveryState`, `rhr`,
+`fitnessMaxHr`, `lthr`, `ltsp`, `staminaLevel`, ability scores (`aerobicEnduranceScore`,
+`lactateThresholdCapacityScore`, `anaerobicEnduranceScore`, `anaerobicCapacityScore`, 0–100, each
+with a `…Change`), `runScoreList`, `recordDetailList` (personal records; `site` holds the activity
+name), and `sleepHrvData`.
+
+`sleepHrvData`: `happenDay`, `avgSleepHrv`, `sleepHrvBase` / `lastSleepHrvBase`, `sleepHrvSd` /
+`lastSleepHrvSd`, `sleepHrvIntervalList`, `sleepHrvList[]` (recent nights), and
+**`remainWearDays`**: nights of wear still needed before COROS shows HRV. Until then, nights have
+no `avgSleepHrv`.
 
 ### Training calendar and workouts
 
@@ -301,24 +345,31 @@ Community clients (read 2026-10-18):
 
 ## 9. Verification status
 
-What `coros-api` assumes, and how sure we are. Update this table when a live capture confirms or
-contradicts something.
+What `coros-api` assumes, and how sure we are. Live = checked against a real account on
+2026-10-18 and pinned by `tests/real_fixtures.rs`.
 
-| Assumption | Source | Status |
-| --- | --- | --- |
-| Login: `md5(password)`, `accountType: 2` | 4 clients | Tested (mock), **live pending** |
-| Headers `accesstoken` + `yfheader` | 2 clients | Tested (mock), **live pending** |
-| `1019` = token invalid | 3 clients | Tested (mock), **live pending** |
-| Asia accounts use `teamcnapi.coros.com` | 2 clients; official MCP suggests US | **Unknown**: login auto-detect tries `asia`, then `us`, `eu` |
-| List units plain, detail ×100 | Pinta365 (measured) | Tested (synthetic), **live pending** |
-| Detail `elevGain`, `aerobicEffect`, `anaerobicEffect` scale | none | **Unknown**: shown raw |
-| HR / speed / cadence field names in `frequencyList` | none | **Unknown**: kept in `Sample::other` so `api activity` lists them |
-| `ltsp` (threshold pace) unit | none | **Unknown**: kept as `lt_pace_raw` |
-| `trainSum` distance unit, program `distance` scale | none | **Unknown**: kept raw |
-| Lap group `type` values (auto vs manual) | none | **Unknown** |
-| `zoneList` (HR zones) shape | none | Not modelled yet (needed in Phase 3) |
-| Wrong-password result code | none | Unknown; handled as a generic API error |
+| Assumption | Status |
+| --- | --- |
+| Login: `md5(password)`, `accountType: 2`; headers `accesstoken` + `yfheader` | ✅ Live |
+| Region of a Vietnam account | ✅ Live: `us` (not `asia`) |
+| Responses may be gzip-compressed without being asked | ✅ Live (detail endpoint) |
+| List units plain; detail distance/time/timestamps ×100 | ✅ Live (list 12.00 km = detail 1200281) |
+| Detail elevation, training effect, VO2max are plain | ✅ Live (trail: +511 m, range 58–487 m) |
+| `frequencyList` field names and units | ✅ Live (see §5) |
+| Lap group `type` values 2 / 10 / 11 / 12 / -1 | ✅ Live |
+| Workout-step laps have no distance; derive from pace | ✅ Live (reps ≈ 700 m @ 4:22–4:28 vs plan 700 m @ 4:20–4:30) |
+| HR zones = `zoneList` `type 126` | ✅ Live |
+| `t7d`/`t28d` = 7/28-day load; fatigue = ATI − CTI; ratio = ATI ÷ CTI | ✅ Live (holds on every day of 12 weeks) |
+| `ltsp` = threshold pace, s/km | ✅ Live (280 = 4:40 /km, same on dashboard) |
+| `trainSum` distances and program distances are ×100 m | ✅ Live (32.65 km week; 8 × 700 m = 560000) |
+| Calendar `entities[].labelId` links to the completed activity | ✅ Live |
+| Workout steps: groups (`isGroup`, `groupId`), `exerciseType` 2 = training, 4 = recovery, `intensityType` 3 = pace | ✅ Live |
+| `exerciseType` 1 = warm-up, 3 = cool-down | ⚠️ Assumed (not in the owner's workouts yet) |
+| HRV values | ⚠️ Not seen yet (account needs another night of wear) |
+| `1019` after re-login on a real expired token | ⚠️ Tested with a mock only |
+| Wrong-password result code | ❓ Unknown; handled as a generic API error |
+| `performance`, `tib`, `levelMap`, pace-zone scopes | ❓ Unknown meaning; not used |
+| Other sports (bike, swim) | ❓ Not in the owner's data; still based on community notes |
 
 How to check: `tuicoros api <command> --raw` shows the untouched response, and
 `cargo run -p xtask -- scrub` turns it into a commit-safe fixture (docs/TESTING.md §2).
-

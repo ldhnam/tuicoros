@@ -12,7 +12,10 @@ use serde::{Deserialize, Serialize};
 use crate::client::CorosClient;
 use crate::error::Result;
 use crate::request::ApiRequest;
-use crate::units::{DateRange, Meters, date_from_int, duration, ser_opt_secs, yyyymmdd};
+use crate::units::{
+    DateRange, LabelId, Meters, Pace, date_from_int, decenti, duration, meters, ser_opt_secs,
+    yyyymmdd,
+};
 use crate::util::{FlexStr, Num};
 
 pub fn schedule_request(range: DateRange) -> ApiRequest {
@@ -43,6 +46,10 @@ impl CorosClient {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Schedule {
     pub plan_id: Option<String>,
@@ -60,6 +67,12 @@ pub struct ScheduledWorkout {
     pub id_in_plan: Option<String>,
     /// The workout definition, when the entry links to one in `programs`.
     pub workout: Option<PlannedWorkout>,
+    /// The activity that completed this entry, if any.
+    pub activity_id: Option<LabelId>,
+    /// How much of the workout was done, 0–1 (`completeRate`).
+    pub completion: Option<f64>,
+    /// COROS's execution score, 0–100.
+    pub score: Option<f64>,
 }
 
 /// A workout as it appears on the calendar.
@@ -70,27 +83,23 @@ pub struct PlannedWorkout {
     pub sport_code: Option<u32>,
     #[serde(serialize_with = "ser_opt_secs")]
     pub duration: Option<Duration>,
-    /// As sent by the API; scale to be verified live.
-    pub distance_raw: Option<f64>,
+    pub distance: Option<Meters>,
     pub training_load: Option<u32>,
     pub exercise_count: Option<u32>,
 }
 
-/// Plan vs actual totals for one week. Distances arrive as strings; their unit
-/// is to be verified live, so they are kept raw.
+/// Plan vs actual totals for one week.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct WeekPlan {
     pub week_start: NaiveDate,
-    pub plan_distance_raw: Option<f64>,
-    pub actual_distance_raw: Option<f64>,
+    pub plan_distance: Option<Meters>,
+    pub actual_distance: Option<Meters>,
     #[serde(serialize_with = "ser_opt_secs")]
     pub plan_duration: Option<Duration>,
     #[serde(serialize_with = "ser_opt_secs")]
     pub actual_duration: Option<Duration>,
     pub plan_load: Option<f64>,
     pub actual_load: Option<f64>,
-    pub plan_count: Option<u32>,
-    pub actual_count: Option<u32>,
 }
 
 /// A workout from the library.
@@ -102,18 +111,64 @@ pub struct Workout {
     pub sport_code: Option<u32>,
     #[serde(serialize_with = "ser_opt_secs")]
     pub estimated_time: Option<Duration>,
+    pub distance: Option<Meters>,
     pub training_load: Option<u32>,
+    /// Top-level steps; repeat groups hold their own steps.
     pub steps: Vec<WorkoutStep>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct WorkoutStep {
-    pub name: Option<String>,
+    /// Readable name: the custom name, or one derived from the step kind.
+    pub label: String,
+    pub kind: Option<StepKind>,
+    /// Repeat count for groups; usually 1 otherwise.
     pub sets: u32,
     pub target: StepTarget,
-    /// Intensity band as sent by the API (unit depends on the intensity type).
-    pub intensity_low: Option<f64>,
-    pub intensity_high: Option<f64>,
+    pub intensity: Option<Intensity>,
+    /// Children of a repeat group.
+    pub steps: Vec<WorkoutStep>,
+}
+
+/// What a workout step (or a workout-step lap) is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StepKind {
+    /// A repeat block (`exerciseType` 0).
+    Group,
+    /// `1` (not yet seen live; assumed from the Training Hub's step types).
+    WarmUp,
+    /// `2`: the work part (verified).
+    Training,
+    /// `3` (not yet seen live; assumed).
+    CoolDown,
+    /// `4`: recovery between reps (verified).
+    Recovery,
+    Other(i64),
+}
+
+impl StepKind {
+    pub fn from_code(code: i64) -> Self {
+        match code {
+            0 => Self::Group,
+            1 => Self::WarmUp,
+            2 => Self::Training,
+            3 => Self::CoolDown,
+            4 => Self::Recovery,
+            other => Self::Other(other),
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Group => "Repeat",
+            Self::WarmUp => "Warm up",
+            Self::Training => "Training",
+            Self::CoolDown => "Cool down",
+            Self::Recovery => "Recovery",
+            Self::Other(_) => "Step",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -132,6 +187,23 @@ pub enum StepTarget {
         value: Option<f64>,
     },
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Intensity {
+    /// `intensityType` 3: a pace range.
+    Pace { fastest: Pace, slowest: Pace },
+    /// Any other intensity type, values as sent (after the ×1000 multiplier).
+    Other {
+        intensity_type: i64,
+        low: Option<f64>,
+        high: Option<f64>,
+    },
+}
+
+// ---------------------------------------------------------------------------
+// Raw JSON
+// ---------------------------------------------------------------------------
 
 #[derive(Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
@@ -166,6 +238,9 @@ impl RawSchedule {
                     date,
                     id_in_plan,
                     workout,
+                    activity_id: e.label_id.owned().filter(|id| id != "0").map(LabelId),
+                    completion: e.complete_rate.get(),
+                    score: e.score.get(),
                 })
             })
             .collect();
@@ -190,6 +265,9 @@ impl RawSchedule {
 struct RawEntity {
     happen_day: Num,
     id_in_plan: FlexStr,
+    label_id: FlexStr,
+    complete_rate: Num,
+    score: Num,
 }
 
 #[derive(Deserialize, Default)]
@@ -208,8 +286,6 @@ struct RawTrainSum {
     actual_duration: Num,
     plan_training_load: Num,
     actual_training_load: Num,
-    plan_count: Num,
-    actual_count: Num,
 }
 
 impl RawWeekStage {
@@ -217,14 +293,13 @@ impl RawWeekStage {
         let s = self.train_sum;
         Some(WeekPlan {
             week_start: date_from_int(self.first_day_in_week)?,
-            plan_distance_raw: s.plan_distance.get(),
-            actual_distance_raw: s.actual_distance.get(),
+            // Strings of metres ×100 ("3265015.00" = 32.65 km).
+            plan_distance: meters(decenti(s.plan_distance)),
+            actual_distance: meters(decenti(s.actual_distance)),
             plan_duration: duration(s.plan_duration.get()),
             actual_duration: duration(s.actual_duration.get()),
             plan_load: s.plan_training_load.get(),
             actual_load: s.actual_training_load.get(),
-            plan_count: s.plan_count.get().map(|c| c.max(0.0).round() as u32),
-            actual_count: s.actual_count.get().map(|c| c.max(0.0).round() as u32),
         })
     }
 }
@@ -239,63 +314,104 @@ struct RawProgram {
     duration: Num,
     estimated_time: Num,
     distance: Num,
+    estimated_distance: Num,
     training_load: Num,
     exercise_num: Num,
     exercises: Vec<RawExercise>,
 }
 
 impl RawProgram {
+    fn sport_code(&self) -> Option<u32> {
+        self.sport_type
+            .get()
+            .filter(|v| *v >= 0.0)
+            .map(|v| v.round() as u32)
+    }
+
+    /// Program distances are metres ×100 (560000 = 8 × 700 m).
+    fn distance(&self) -> Option<Meters> {
+        meters(decenti(self.distance)).or(meters(decenti(self.estimated_distance)))
+    }
+
     fn planned(&self) -> PlannedWorkout {
         PlannedWorkout {
             id: self.id.owned(),
             name: self.name.owned(),
-            sport_code: self
-                .sport_type
-                .get()
-                .filter(|v| *v >= 0.0)
-                .map(|v| v.round() as u32),
+            sport_code: self.sport_code(),
             duration: duration(self.duration.get().or(self.estimated_time.get())),
-            distance_raw: self.distance.nonzero(),
+            distance: self.distance(),
             training_load: self.training_load.positive_u32(),
             exercise_count: self.exercise_num.positive_u32(),
         }
     }
 
     fn into_workout(self) -> Option<Workout> {
+        let is_run = self.sport_code() == Some(1);
         Some(Workout {
-            sport_code: self
-                .sport_type
-                .get()
-                .filter(|v| *v >= 0.0)
-                .map(|v| v.round() as u32),
+            sport_code: self.sport_code(),
             estimated_time: duration(self.estimated_time.get().or(self.duration.get())),
+            distance: self.distance(),
             training_load: self.training_load.positive_u32(),
             name: self.name.owned(),
             id: self.id.owned()?,
-            steps: self
-                .exercises
-                .into_iter()
-                .map(RawExercise::into_step)
-                .collect(),
+            steps: build_steps(self.exercises, is_run),
         })
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Clone)]
 #[serde(default, rename_all = "camelCase")]
 struct RawExercise {
+    id: FlexStr,
     name: FlexStr,
+    exercise_type: Num,
+    is_group: Option<bool>,
+    group_id: FlexStr,
+    sort_no: Num,
     sets: Num,
     target_type: Num,
     target_value: Num,
+    intensity_type: Num,
     intensity_value: Num,
     intensity_value_extend: Num,
     intensity_multiplier: Num,
 }
 
+/// Steps come as a flat list; children point to their group via `groupId`.
+fn build_steps(mut exercises: Vec<RawExercise>, is_run: bool) -> Vec<WorkoutStep> {
+    exercises.sort_by(|a, b| {
+        a.sort_no
+            .get()
+            .unwrap_or(0.0)
+            .partial_cmp(&b.sort_no.get().unwrap_or(0.0))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    let is_top = |e: &RawExercise| matches!(e.group_id.get(), None | Some("0"));
+    let (top, children): (Vec<_>, Vec<_>) = exercises.into_iter().partition(is_top);
+    top.into_iter()
+        .map(|parent| {
+            let id = parent.id.owned();
+            let mut step = parent.into_step(is_run);
+            if let Some(id) = id {
+                step.steps = children
+                    .iter()
+                    .filter(|c| c.group_id.get() == Some(id.as_str()))
+                    .map(|c| c.clone().into_step(is_run))
+                    .collect();
+            }
+            step
+        })
+        .collect()
+}
+
 impl RawExercise {
-    fn into_step(self) -> WorkoutStep {
-        let divisor = if self.intensity_multiplier.int() == Some(1000) {
+    fn into_step(self, is_run: bool) -> WorkoutStep {
+        let kind = if self.is_group == Some(true) {
+            Some(StepKind::Group)
+        } else {
+            self.exercise_type.int().map(StepKind::from_code)
+        };
+        let multiplier = if self.intensity_multiplier.int() == Some(1000) {
             1000.0
         } else {
             1.0
@@ -308,24 +424,60 @@ impl RawExercise {
                 },
                 None => StepTarget::Open,
             },
-            // Open/manual step: 0 means "no cap", not "zero seconds".
-            Some(1) => StepTarget::Open,
             Some(2) => StepTarget::Time {
                 seconds: self.target_value.get().unwrap_or(0.0),
             },
+            // Open/manual step: 0 means "no cap", not "zero seconds". 0 = group header.
+            Some(0 | 1) | None => StepTarget::Open,
             Some(other) => StepTarget::Other {
                 target_type: other,
                 value: self.target_value.get(),
             },
-            None => StepTarget::Open,
+        };
+        let low = self.intensity_value.nonzero().map(|v| v / multiplier);
+        let high = self
+            .intensity_value_extend
+            .nonzero()
+            .map(|v| v / multiplier);
+        let intensity = match (self.intensity_type.int(), low, high) {
+            (Some(0) | None, None, None) => None,
+            (Some(3), Some(a), Some(b)) => Some(Intensity::Pace {
+                fastest: Pace(a.min(b)),
+                slowest: Pace(a.max(b)),
+            }),
+            (Some(t), low, high) => Some(Intensity::Other {
+                intensity_type: t,
+                low,
+                high,
+            }),
+            (None, low, high) => Some(Intensity::Other {
+                intensity_type: 0,
+                low,
+                high,
+            }),
         };
         WorkoutStep {
-            name: self.name.owned(),
+            label: step_label(self.name.get(), kind, is_run),
+            kind,
             sets: self.sets.positive_u32().unwrap_or(1),
             target,
-            intensity_low: self.intensity_value.nonzero().map(|v| v / divisor),
-            intensity_high: self.intensity_value_extend.nonzero().map(|v| v / divisor),
+            intensity,
+            steps: Vec::new(),
         }
+    }
+}
+
+/// Built-in steps are named with codes like `T3001`; show the step kind instead.
+fn step_label(name: Option<&str>, kind: Option<StepKind>, is_run: bool) -> String {
+    let is_code =
+        |n: &str| n.len() > 1 && n.starts_with('T') && n[1..].chars().all(|c| c.is_ascii_digit());
+    match (name, kind) {
+        (_, Some(StepKind::Group)) => "Repeat".to_owned(),
+        (Some(n), _) if !is_code(n) && !n.is_empty() => n.to_owned(),
+        (_, Some(StepKind::Training)) if is_run => "Run".to_owned(),
+        (_, Some(k)) => k.label().to_owned(),
+        (Some(n), None) => n.to_owned(),
+        (None, None) => "Step".to_owned(),
     }
 }
 
@@ -350,5 +502,29 @@ mod tests {
             ]
         );
         assert!(workouts_request().idempotent);
+    }
+
+    #[test]
+    fn step_labels() {
+        assert_eq!(
+            step_label(Some("T3001"), Some(StepKind::Training), true),
+            "Run"
+        );
+        assert_eq!(
+            step_label(Some("T3001"), Some(StepKind::Training), false),
+            "Training"
+        );
+        assert_eq!(
+            step_label(Some("T1123"), Some(StepKind::Recovery), true),
+            "Recovery"
+        );
+        assert_eq!(
+            step_label(Some("Strides"), Some(StepKind::Training), true),
+            "Strides"
+        );
+        assert_eq!(
+            step_label(Some("Training"), Some(StepKind::Group), true),
+            "Repeat"
+        );
     }
 }

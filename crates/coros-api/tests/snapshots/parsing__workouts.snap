@@ -8,57 +8,67 @@ expression: w
     "name": "6x800 @ 3:50",
     "sport_code": 1,
     "estimated_time": 3300.0,
+    "distance": null,
     "training_load": 105,
     "steps": [
       {
-        "name": "Warm up",
+        "label": "Warm up",
+        "kind": null,
         "sets": 1,
         "target": {
           "kind": "time",
           "seconds": 900.0
         },
-        "intensity_low": null,
-        "intensity_high": null
+        "intensity": null,
+        "steps": []
       },
       {
-        "name": "Run",
+        "label": "Run",
+        "kind": null,
         "sets": 6,
         "target": {
           "kind": "distance",
           "meters": 800.0
         },
-        "intensity_low": 225.0,
-        "intensity_high": 235.0
+        "intensity": {
+          "kind": "pace",
+          "fastest": 225.0,
+          "slowest": 235.0
+        },
+        "steps": []
       },
       {
-        "name": "Recover",
+        "label": "Recover",
+        "kind": null,
         "sets": 6,
         "target": {
           "kind": "open"
         },
-        "intensity_low": null,
-        "intensity_high": null
+        "intensity": null,
+        "steps": []
       },
       {
-        "name": "Cool down",
+        "label": "Cool down",
+        "kind": null,
         "sets": 1,
         "target": {
           "kind": "time",
           "seconds": 600.0
         },
-        "intensity_low": null,
-        "intensity_high": null
+        "intensity": null,
+        "steps": []
       },
       {
-        "name": "Mystery",
+        "label": "Mystery",
+        "kind": null,
         "sets": 1,
         "target": {
           "kind": "other",
           "target_type": 9,
           "value": 42.0
         },
-        "intensity_low": null,
-        "intensity_high": null
+        "intensity": null,
+        "steps": []
       }
     ]
   }

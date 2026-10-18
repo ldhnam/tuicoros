@@ -16,10 +16,13 @@ expression: s
         "name": "Easy 8k",
         "sport_code": 1,
         "duration": 2880.0,
-        "distance_raw": 800000.0,
+        "distance": 8000.0,
         "training_load": 45,
         "exercise_count": 3
-      }
+      },
+      "activity_id": null,
+      "completion": null,
+      "score": null
     },
     {
       "date": "2026-10-17",
@@ -29,28 +32,32 @@ expression: s
         "name": "6x800 @ 3:50",
         "sport_code": 1,
         "duration": 3300.0,
-        "distance_raw": null,
+        "distance": null,
         "training_load": 105,
         "exercise_count": 4
-      }
+      },
+      "activity_id": "476100000000000001",
+      "completion": 0.94,
+      "score": 96.2
     },
     {
       "date": "2026-10-19",
       "id_in_plan": "99",
-      "workout": null
+      "workout": null,
+      "activity_id": null,
+      "completion": null,
+      "score": null
     }
   ],
   "weeks": [
     {
       "week_start": "2026-10-12",
-      "plan_distance_raw": 48000.0,
-      "actual_distance_raw": 42300.0,
+      "plan_distance": 48000.0,
+      "actual_distance": 42300.0,
       "plan_duration": 18000.0,
       "actual_duration": 15000.0,
       "plan_load": 340.0,
-      "actual_load": 310.0,
-      "plan_count": 5,
-      "actual_count": 4
+      "actual_load": 310.0
     }
   ]
 }

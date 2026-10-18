@@ -19,9 +19,16 @@ us safe. The UI is tested by rendering to an in-memory buffer and taking snapsho
 Fixtures live in `crates/coros-api/tests/fixtures/<endpoint>/<case>.json`. Each one is a full
 response body (envelope included) that wiremock serves.
 
-- `synthetic_*.json`: **hand-written** from COROS_API.md. These exist today and cover every endpoint.
-- Real captures, scrubbed, sit next to them without the prefix. When the two disagree, the real
-  capture wins: fix the code and the docs.
+- `synthetic_*.json`: **hand-written** edge cases (unknown sports, zero-filled fields, numbers as
+  strings, missing ids, a new account).
+- `real*.json`: **scrubbed captures** from a real account (2026-10-18): activity list, five activity
+  types, EvoLab, daily metrics, dashboard, calendar, workouts. `tests/real_fixtures.rs` pins what
+  was verified live. When a synthetic and a real fixture disagree, the real one wins.
+
+The scrubber replaces ids (consistently across files), email, names, avatars, activity names and
+`site` values (they contain place names), device hardware ids, tokens and URLs. It moves GPS to a
+fake origin, thins `frequencyList` to ~200 points and empties unused chart arrays. Always grep the
+result for your name, email and city before committing.
 
 Capture real responses with the debug CLI. `--raw` prints only `data`, so wrap it in an envelope:
 

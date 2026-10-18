@@ -12,7 +12,8 @@ use serde_json::Value;
 use crate::client::CorosClient;
 use crate::error::{CorosError, Result};
 use crate::request::ApiRequest;
-use crate::sport::SportType;
+use crate::sport::{SportCategory, SportType};
+use crate::training::StepKind;
 use crate::units::{
     LabelId, Meters, Pace, Page, date_from_int, datetime, datetime_centi, decenti, duration,
     gps_degrees, kcal, meters, offset_from_quarters, ser_opt_secs, yyyymmdd,
@@ -267,9 +268,11 @@ pub struct ActivitySummary {
 pub struct ActivityDetail {
     pub id: LabelId,
     pub summary: DetailSummary,
-    /// Lap groupings (auto-lap by distance, manual laps, …).
+    /// Lap groupings: auto laps, longer segments, workout steps, whole activity.
     pub lap_groups: Vec<LapGroup>,
-    /// The recorded track, about one sample per second.
+    /// Time in each heart-rate zone.
+    pub hr_zones: Vec<HrZone>,
+    /// The recorded track, one sample per second.
     pub samples: Vec<Sample>,
     pub feel: Feel,
     /// Weather block as sent by the API (shape not modelled yet).
@@ -288,36 +291,98 @@ pub struct DetailSummary {
     #[serde(serialize_with = "ser_opt_secs")]
     pub moving: Option<Duration>,
     pub avg_pace: Option<Pace>,
+    /// Fastest kilometre (runs).
+    pub best_km: Option<Pace>,
+    /// Grade-adjusted pace (runs).
+    pub adjusted_pace: Option<Pace>,
     pub avg_hr: Option<u32>,
     pub max_hr: Option<u32>,
     pub avg_cadence: Option<u32>,
     pub max_cadence: Option<u32>,
+    pub avg_stride_length_cm: Option<u32>,
     pub avg_power: Option<u32>,
     pub max_power: Option<u32>,
     pub calories_kcal: Option<f64>,
     pub training_load: Option<u32>,
-    /// Scale not yet verified against a live account (docs/COROS_API.md).
-    pub elevation_gain: Option<f64>,
-    /// Scale not yet verified against a live account.
+    pub elevation_gain: Option<Meters>,
+    pub elevation_loss: Option<Meters>,
+    /// Highest / lowest point, metres. `None` when the watch has no altitude.
+    pub max_elevation: Option<f64>,
+    pub min_elevation: Option<f64>,
+    /// Training effect, 0–5.
     pub aerobic_effect: Option<f64>,
-    /// Scale not yet verified against a live account.
     pub anaerobic_effect: Option<f64>,
     pub vo2max: Option<f64>,
 }
 
+/// One way of splitting the activity into laps. COROS sends several at once.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct LapGroup {
-    /// The API's grouping kind (e.g. auto-lap vs manual). Meaning of each value
-    /// to be confirmed live.
+    /// `2` auto laps, `10` workout steps, `11`/`12` longer segments, `-1` whole activity.
     pub kind: Option<i64>,
+    /// Lap length for distance-based groups (1 km auto laps, 5 km segments, …).
+    pub split: Option<Meters>,
     pub laps: Vec<Lap>,
     /// 0-based indexes of the fastest laps, as flagged by COROS.
     pub fastest: Vec<u32>,
 }
 
+impl LapGroup {
+    /// Short description for headings, e.g. "1 km laps", "Workout steps".
+    pub fn label(&self) -> String {
+        let split = self.split.map(short_distance);
+        match (self.kind, split) {
+            (Some(-1), _) => "Whole activity".to_owned(),
+            (Some(10), _) => "Workout steps".to_owned(),
+            (Some(2), Some(d)) => format!("{d} laps"),
+            (Some(2), None) => "Laps".to_owned(),
+            (_, Some(d)) => format!("{d} segments"),
+            (Some(k), None) => format!("Laps (kind {k})"),
+            (None, None) => "Laps".to_owned(),
+        }
+    }
+
+    /// The group a runner usually wants first: workout steps if any, else the
+    /// shortest distance laps.
+    pub fn preferred(groups: &[LapGroup]) -> Option<&LapGroup> {
+        let usable = || {
+            groups
+                .iter()
+                .filter(|g| !g.laps.is_empty() && g.kind != Some(-1))
+        };
+        usable()
+            .find(|g| g.kind == Some(10))
+            .or_else(|| {
+                usable().filter(|g| g.split.is_some()).min_by(|a, b| {
+                    a.split
+                        .map(|m| m.0)
+                        .partial_cmp(&b.split.map(|m| m.0))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+            })
+            .or_else(|| usable().next())
+    }
+}
+
+fn short_distance(m: Meters) -> String {
+    if m.0 >= 1000.0 {
+        let km = m.0 / 1000.0;
+        if (km - km.round()).abs() < 0.005 {
+            format!("{km:.0} km")
+        } else {
+            format!("{km:.2} km")
+        }
+    } else {
+        format!("{:.0} m", m.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Lap {
     pub index: u32,
+    /// For workout-step laps: what the step was (rep, recovery, …).
+    pub step_kind: Option<StepKind>,
+    /// Workout-step laps carry no distance; it is derived from time and pace.
     pub distance: Option<Meters>,
     #[serde(serialize_with = "ser_opt_secs")]
     pub duration: Option<Duration>,
@@ -326,18 +391,37 @@ pub struct Lap {
     pub max_hr: Option<u32>,
     pub avg_cadence: Option<u32>,
     pub avg_power: Option<u32>,
-    /// Scale not yet verified.
-    pub elevation_gain: Option<f64>,
+    pub elevation_gain: Option<Meters>,
 }
 
-/// One sample of the recorded track.
+/// Time spent in one heart-rate zone.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct HrZone {
+    /// 0-based; COROS shows zones 1–5 plus a zone 0 "below zone 1".
+    pub zone: u32,
+    pub low_bpm: Option<u32>,
+    pub high_bpm: Option<u32>,
+    #[serde(serialize_with = "ser_opt_secs")]
+    pub time: Option<Duration>,
+    pub percent: Option<f64>,
+}
+
+/// One sample of the recorded track (about one per second).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Sample {
     pub time: Option<DateTime<Utc>>,
     pub lat: Option<f64>,
     pub lon: Option<f64>,
-    /// Raw numeric fields we don't model yet (heart rate, speed, …), keyed by
-    /// API name, so they can be discovered with `--json`.
+    /// Distance covered so far.
+    pub distance: Option<Meters>,
+    pub heart_rate: Option<u32>,
+    pub cadence: Option<u32>,
+    pub power: Option<u32>,
+    /// Metres; may be negative near sea level.
+    pub altitude: Option<f64>,
+    /// Other numeric fields as sent by the API, e.g. `speed` and `adjustedPace`
+    /// (s/km for runs), `cadenceLength` (stride, cm), `groundTime` (ms),
+    /// `verticalVibration`, `verticalStrideRatio`, `slope`, `heartLevel`.
     pub other: BTreeMap<String, f64>,
 }
 
@@ -482,24 +566,44 @@ fn sport(code: Num) -> SportType {
 struct RawDetail {
     summary: RawDetailSummary,
     lap_list: Vec<RawLapGroup>,
+    zone_list: Vec<RawZoneGroup>,
     frequency_list: Vec<BTreeMap<String, Value>>,
     sport_feel_info: RawFeel,
     weather: Option<Value>,
 }
 
+/// `zoneList[].type` for heart-rate zones (130 is pace zones).
+const HR_ZONE_TYPE: i64 = 126;
+
 impl RawDetail {
     fn into_detail(self, id: LabelId) -> ActivityDetail {
+        let summary = self.summary.into_summary();
+        // Workout-step laps have no distance; for runs it can be derived from pace.
+        let pace_based = summary
+            .sport
+            .is_some_and(|s| matches!(s.category(), SportCategory::Run | SportCategory::Walk));
         ActivityDetail {
             id,
-            summary: self.summary.into_summary(),
             lap_groups: self
                 .lap_list
                 .into_iter()
-                .map(RawLapGroup::into_group)
+                .map(|g| g.into_group(pace_based))
                 .collect(),
+            hr_zones: self
+                .zone_list
+                .into_iter()
+                .find(|z| z.kind.int() == Some(HR_ZONE_TYPE))
+                .map(|z| {
+                    z.zone_item_list
+                        .into_iter()
+                        .filter_map(RawZoneItem::into_zone)
+                        .collect()
+                })
+                .unwrap_or_default(),
             samples: self.frequency_list.into_iter().map(sample).collect(),
             feel: self.sport_feel_info.into_feel(),
             weather: self.weather.filter(|w| !w.is_null()),
+            summary,
         }
     }
 }
@@ -520,10 +624,16 @@ struct RawDetailSummary {
     max_hr: Num,
     avg_cadence: Num,
     max_cadence: Num,
+    avg_step_len: Num,
     avg_power: Num,
     max_power: Num,
     training_load: Num,
     elev_gain: Num,
+    total_descent: Num,
+    max_elev: Num,
+    min_elev: Num,
+    best_km: Num,
+    adjusted_pace: Num,
     aerobic_effect: Num,
     anaerobic_effect: Num,
     current_vo2_max: Num,
@@ -541,6 +651,8 @@ impl RawDetailSummary {
             start: datetime_centi(self.start_timestamp, tz),
             end: datetime_centi(self.end_timestamp, tz),
             avg_pace: distance.and_then(|d| Pace::from_distance_time(d, moving.or(elapsed)?)),
+            best_km: self.best_km.get().filter(|p| *p > 0.0).map(Pace),
+            adjusted_pace: self.adjusted_pace.get().filter(|p| *p > 0.0).map(Pace),
             distance,
             elapsed,
             moving,
@@ -548,11 +660,15 @@ impl RawDetailSummary {
             max_hr: self.max_hr.positive_u32(),
             avg_cadence: self.avg_cadence.positive_u32(),
             max_cadence: self.max_cadence.positive_u32(),
+            avg_stride_length_cm: self.avg_step_len.positive_u32(),
             avg_power: self.avg_power.positive_u32(),
             max_power: self.max_power.positive_u32(),
             calories_kcal: kcal(self.calories),
             training_load: self.training_load.positive_u32(),
-            elevation_gain: self.elev_gain.nonzero(),
+            elevation_gain: meters(self.elev_gain.get()),
+            elevation_loss: meters(self.total_descent.get()),
+            max_elevation: self.max_elev.nonzero(),
+            min_elevation: self.min_elev.nonzero(),
             aerobic_effect: self.aerobic_effect.nonzero(),
             anaerobic_effect: self.anaerobic_effect.nonzero(),
             vo2max: self.current_vo2_max.nonzero(),
@@ -565,14 +681,22 @@ impl RawDetailSummary {
 struct RawLapGroup {
     #[serde(rename = "type")]
     kind: Num,
+    lap_distance: Num,
     fast_lap_index_list: Vec<Num>,
     lap_item_list: Vec<RawLap>,
 }
 
 impl RawLapGroup {
-    fn into_group(self) -> LapGroup {
+    fn into_group(self, pace_based: bool) -> LapGroup {
+        let kind = self.kind.int();
         LapGroup {
-            kind: self.kind.int(),
+            // Whole-activity groups also carry a lapDistance (the total); it isn't a split.
+            split: if kind == Some(-1) {
+                None
+            } else {
+                meters(decenti(self.lap_distance))
+            },
+            kind,
             fastest: self
                 .fast_lap_index_list
                 .into_iter()
@@ -582,7 +706,7 @@ impl RawLapGroup {
                 .lap_item_list
                 .into_iter()
                 .enumerate()
-                .map(|(i, lap)| lap.into_lap(i))
+                .map(|(i, lap)| lap.into_lap(i, pace_based))
                 .collect(),
         }
     }
@@ -592,8 +716,11 @@ impl RawLapGroup {
 #[serde(default, rename_all = "camelCase")]
 struct RawLap {
     lap_index: Num,
+    exercise_type: Num,
     distance: Num,
     time: Num,
+    avg_pace: Num,
+    avg_move_speed: Num,
     avg_hr: Num,
     max_hr: Num,
     avg_cadence: Num,
@@ -602,26 +729,71 @@ struct RawLap {
 }
 
 impl RawLap {
-    fn into_lap(self, position: usize) -> Lap {
-        let distance = meters(decenti(self.distance));
+    fn into_lap(self, position: usize, pace_based: bool) -> Lap {
         let duration = duration(decenti(self.time));
+        let mut distance = meters(decenti(self.distance));
+        let mut pace = distance
+            .zip(duration)
+            .and_then(|(d, t)| Pace::from_distance_time(d, t));
+        if pace_based && distance.is_none() {
+            // Workout-step laps: no distance, but a pace in s/km.
+            let positive = |n: Num| n.get().filter(|p| *p > 0.0);
+            let reported = positive(self.avg_pace).or(positive(self.avg_move_speed));
+            if let (Some(p), Some(t)) = (reported, duration) {
+                pace = Some(Pace(p));
+                distance = meters(Some(t.as_secs_f64() / p * 1000.0));
+            }
+        }
         Lap {
             index: self
                 .lap_index
                 .int()
                 .and_then(|i| u32::try_from(i).ok())
                 .unwrap_or(position as u32 + 1),
-            pace: distance
-                .zip(duration)
-                .and_then(|(d, t)| Pace::from_distance_time(d, t)),
+            step_kind: self
+                .exercise_type
+                .int()
+                .filter(|t| *t > 0)
+                .map(StepKind::from_code),
             distance,
             duration,
+            pace,
             avg_hr: self.avg_hr.positive_u32(),
             max_hr: self.max_hr.positive_u32(),
             avg_cadence: self.avg_cadence.positive_u32(),
             avg_power: self.avg_power.positive_u32(),
-            elevation_gain: self.elev_gain.nonzero(),
+            elevation_gain: meters(self.elev_gain.get()),
         }
+    }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+struct RawZoneGroup {
+    #[serde(rename = "type")]
+    kind: Num,
+    zone_item_list: Vec<RawZoneItem>,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+struct RawZoneItem {
+    zone_index: Num,
+    left_scope: Num,
+    right_scope: Num,
+    second: Num,
+    percent: Num,
+}
+
+impl RawZoneItem {
+    fn into_zone(self) -> Option<HrZone> {
+        Some(HrZone {
+            zone: u32::try_from(self.zone_index.int()?).ok()?,
+            low_bpm: self.left_scope.positive_u32(),
+            high_bpm: self.right_scope.positive_u32(),
+            time: duration(self.second.get()),
+            percent: self.percent.get(),
+        })
     }
 }
 
@@ -630,6 +802,11 @@ fn sample(mut raw: BTreeMap<String, Value>) -> Sample {
     let time = datetime_centi(take("timestamp"), None).map(|t| t.with_timezone(&Utc));
     let lat = gps_degrees(take("gpsLat"));
     let lon = gps_degrees(take("gpsLon"));
+    let distance = meters(decenti(take("distance")));
+    let heart_rate = take("heart").positive_u32();
+    let cadence = take("cadence").positive_u32();
+    let power = take("power").positive_u32();
+    let altitude = take("altitude").get();
     let other = raw
         .into_iter()
         .filter_map(|(k, v)| v.as_f64().map(|f| (k, f)))
@@ -638,6 +815,11 @@ fn sample(mut raw: BTreeMap<String, Value>) -> Sample {
         time,
         lat,
         lon,
+        distance,
+        heart_rate,
+        cadence,
+        power,
+        altitude,
         other,
     }
 }

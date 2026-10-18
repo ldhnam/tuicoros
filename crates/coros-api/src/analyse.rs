@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use crate::client::CorosClient;
 use crate::error::Result;
 use crate::request::ApiRequest;
-use crate::units::{DateRange, Meters, date_from_int, duration, meters, ser_opt_secs, yyyymmdd};
+use crate::units::{
+    DateRange, Meters, Pace, date_from_int, duration, meters, ser_opt_secs, yyyymmdd,
+};
 use crate::util::Num;
 
 /// `analyse/dayDetail/query` is fetched in chunks of at most this many days.
@@ -76,20 +78,22 @@ pub struct DailyMetrics {
     /// Measured resting HR (what the phone app shows). Prefer this one.
     pub test_rhr: Option<u32>,
     pub training_load: Option<u32>,
-    /// `t7d`: EvoLab "Load Impact".
-    pub load_impact: Option<f64>,
-    /// `t28d`: EvoLab "Base Fitness".
-    pub base_fitness: Option<f64>,
-    /// `ati`: acute training impulse.
+    /// `t7d`: total training load of the last 7 days (verified: equals the
+    /// week's actual load in the training calendar).
+    pub load_7d: Option<f64>,
+    /// `t28d`: total training load of the last 28 days.
+    pub load_28d: Option<f64>,
+    /// `ati`: acute (short-term) training load.
     pub acute_load: Option<f64>,
-    /// `cti`: chronic training impulse.
+    /// `cti`: chronic (long-term) training load, i.e. fitness.
     pub chronic_load: Option<f64>,
     pub load_ratio: Option<f64>,
     pub load_ratio_state: Option<i64>,
-    /// `tiredRateNew`: fatigue.
+    /// `tiredRateNew`: fatigue = acute − chronic load (can be negative = fresh).
     pub fatigue: Option<f64>,
     pub fatigue_state: Option<i64>,
-    /// `-1` from the API ("no estimate") becomes `None`.
+    /// Running performance trend as sent by the API (scale unclear).
+    /// `-1` ("no estimate") becomes `None`.
     pub performance: Option<f64>,
     pub recommended_load_min: Option<f64>,
     pub recommended_load_max: Option<f64>,
@@ -99,8 +103,8 @@ pub struct DailyMetrics {
     pub vo2max: Option<f64>,
     /// Lactate threshold heart rate, bpm.
     pub lthr: Option<u32>,
-    /// Lactate threshold pace/speed as sent by the API (unit to be verified).
-    pub lt_pace_raw: Option<f64>,
+    /// Lactate threshold pace (`ltsp`, s/km).
+    pub lt_pace: Option<Pace>,
     pub stamina_level: Option<f64>,
     pub stamina_level_7d: Option<f64>,
 }
@@ -195,8 +199,8 @@ impl RawDay {
             rhr: self.rhr.positive_u32(),
             test_rhr: self.test_rhr.positive_u32(),
             training_load: self.training_load.positive_u32(),
-            load_impact: self.t7d.nonzero(),
-            base_fitness: self.t28d.nonzero(),
+            load_7d: self.t7d.nonzero(),
+            load_28d: self.t28d.nonzero(),
             acute_load: self.ati.nonzero(),
             chronic_load: self.cti.nonzero(),
             load_ratio: self.training_load_ratio.nonzero(),
@@ -210,7 +214,7 @@ impl RawDay {
             sleep_hrv_baseline: self.sleep_hrv_base.nonzero(),
             vo2max: self.vo2max.nonzero(),
             lthr: self.lthr.positive_u32(),
-            lt_pace_raw: self.ltsp.nonzero(),
+            lt_pace: self.ltsp.get().filter(|p| *p > 0.0).map(Pace),
             stamina_level: self.stamina_level.nonzero(),
             stamina_level_7d: self.stamina_level7d.nonzero(),
         })

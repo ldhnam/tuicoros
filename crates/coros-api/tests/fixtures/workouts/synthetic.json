@@ -25,7 +25,8 @@
           "sets": 6,
           "intensityValue": 225000,
           "intensityValueExtend": 235000,
-          "intensityMultiplier": 1000
+          "intensityMultiplier": 1000,
+          "intensityType": 3
         },
         {
           "name": "Recover",

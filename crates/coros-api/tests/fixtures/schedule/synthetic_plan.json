@@ -13,7 +13,10 @@
       {
         "happenDay": "20261017",
         "idInPlan": "2",
-        "planProgramId": "2"
+        "planProgramId": "2",
+        "labelId": "476100000000000001",
+        "completeRate": "0.94",
+        "score": "96.20"
       },
       {
         "happenDay": 20261013,
@@ -57,8 +60,8 @@
         "stage": 1,
         "planId": "plan-1",
         "trainSum": {
-          "planDistance": "48000",
-          "actualDistance": "42300",
+          "planDistance": "4800000.00",
+          "actualDistance": "4230000.00",
           "planDuration": 18000,
           "actualDuration": 15000,
           "planTrainingLoad": 340,

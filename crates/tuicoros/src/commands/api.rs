@@ -9,7 +9,8 @@ use color_eyre::Result;
 use color_eyre::eyre::WrapErr;
 use coros_api::{
     ActivityDetail, ActivityQuery, ActivitySummary, Analyse, ApiRequest, CorosClient, DailyMetrics,
-    DateRange, FileFormat, LabelId, Schedule, SportType, StepTarget, Workout, requests,
+    Dashboard, DateRange, FileFormat, Intensity, LabelId, LapGroup, Schedule, SportCategory,
+    SportType, StepKind, StepTarget, Workout, WorkoutStep, requests,
 };
 use serde::Serialize;
 
@@ -164,21 +165,7 @@ pub async fn run(ctx: &Ctx<'_>, command: &ApiCommand) -> Result<()> {
             if json(output, &dashboard)? {
                 return Ok(());
             }
-            match dashboard.hrv {
-                None => println!("No HRV data (wear the watch overnight to get it)."),
-                Some(hrv) => {
-                    println!("Night        HRV   Baseline  SD");
-                    for night in hrv.nights.iter().chain(hrv.latest.iter()) {
-                        println!(
-                            "{}  {:>4}  {:>8}  {:>3}",
-                            night.date,
-                            format::opt_f(night.avg, 0),
-                            format::opt_f(night.baseline, 0),
-                            format::opt_f(night.std_dev, 0)
-                        );
-                    }
-                }
-            }
+            print_dashboard(&dashboard);
         }
 
         ApiCommand::Schedule { range, output } => {
@@ -293,6 +280,7 @@ fn sport_name(sport: SportType) -> String {
 fn print_detail(d: &ActivityDetail, requested: SportType) {
     let s = &d.summary;
     let sport = s.sport.unwrap_or(requested);
+    let cat = sport.category();
     if s.sport.is_some_and(|actual| actual != requested) {
         println!(
             "note: this is a {} activity; pass --sport {} for correct data\n",
@@ -317,33 +305,53 @@ fn print_detail(d: &ActivityDetail, requested: SportType) {
         format::duration(s.moving),
         format::duration(s.elapsed)
     );
-    println!(
-        "Avg pace     {}",
-        format::pace(s.avg_pace, sport.category())
-    );
+    if s.avg_pace.is_some() {
+        let mut line = format!("Avg pace     {}", format::pace(s.avg_pace, cat));
+        if s.adjusted_pace.is_some() {
+            line += &format!("   Grade-adjusted {}", format::pace(s.adjusted_pace, cat));
+        }
+        if s.best_km.is_some() {
+            line += &format!("   Best km {}", format::pace(s.best_km, cat));
+        }
+        println!("{line}");
+    }
     println!(
         "Heart rate   avg {}  max {}",
         format::opt(s.avg_hr),
         format::opt(s.max_hr)
     );
+    if s.avg_cadence.is_some() {
+        println!(
+            "Cadence      avg {}  max {}   Stride {} cm",
+            format::opt(s.avg_cadence),
+            format::opt(s.max_cadence),
+            format::opt(s.avg_stride_length_cm)
+        );
+    }
+    if s.avg_power.is_some() {
+        println!(
+            "Power        avg {} W  max {} W",
+            format::opt(s.avg_power),
+            format::opt(s.max_power)
+        );
+    }
+    if s.elevation_gain.is_some() || s.elevation_loss.is_some() {
+        let range = match (s.min_elevation, s.max_elevation) {
+            (Some(lo), Some(hi)) => format!("   range {lo:.0}–{hi:.0} m"),
+            _ => String::new(),
+        };
+        println!(
+            "Elevation    +{} m / -{} m{range}",
+            format::opt_f(s.elevation_gain.map(|m| m.0), 0),
+            format::opt_f(s.elevation_loss.map(|m| m.0), 0),
+        );
+    }
     println!(
-        "Cadence      avg {}  max {}",
-        format::opt(s.avg_cadence),
-        format::opt(s.max_cadence)
-    );
-    println!(
-        "Power        avg {}  max {}",
-        format::opt(s.avg_power),
-        format::opt(s.max_power)
-    );
-    println!(
-        "Load {}  Calories {} kcal  Elev gain {}  VO2max {}  TE {} / {}",
+        "Load {}   Training effect {} aerobic / {} anaerobic   Calories {} kcal",
         format::opt(s.training_load),
-        format::opt_f(s.calories_kcal, 0),
-        format::opt_f(s.elevation_gain, 0),
-        format::opt_f(s.vo2max, 0),
         format::opt_f(s.aerobic_effect, 1),
         format::opt_f(s.anaerobic_effect, 1),
+        format::opt_f(s.calories_kcal, 0),
     );
     if let Some(rpe) = d.feel.perceived_exertion {
         println!("Effort       {}", rpe.label());
@@ -352,16 +360,36 @@ fn print_detail(d: &ActivityDetail, requested: SportType) {
         println!("Note         {note}");
     }
 
-    for (i, group) in d
-        .lap_groups
-        .iter()
-        .enumerate()
-        .filter(|(_, g)| !g.laps.is_empty())
-    {
-        println!("\nLaps (group {}, kind {})", i + 1, format::opt(group.kind));
+    if !d.hr_zones.is_empty() {
+        println!("\nHeart-rate zones");
+        for z in d
+            .hr_zones
+            .iter()
+            .filter(|z| z.time.is_some_and(|t| t.as_secs() > 0))
+        {
+            let bar = "█".repeat((z.percent.unwrap_or(0.0) / 4.0).round() as usize);
+            // Zone 0 is "below zone 1"; COROS sends it with zone 1's bounds.
+            let bounds = if z.zone == 0 {
+                format!("<{}", format::opt(z.low_bpm))
+            } else {
+                format!("{}–{}", format::opt(z.low_bpm), format::opt(z.high_bpm))
+            };
+            println!(
+                "  Z{} {:<8} {:>7}  {:>3}% {bar}",
+                z.zone,
+                bounds,
+                format::duration(z.time),
+                format::opt_f(z.percent, 0)
+            );
+        }
+    }
+
+    // Show the most useful lap group in full; list the others.
+    if let Some(group) = LapGroup::preferred(&d.lap_groups) {
+        println!("\n{}", group.label());
         println!(
-            "  {:>3}  {:>9}  {:>8}  {:>10}  {:>4}  {:>4}  {:>4}",
-            "#", "Distance", "Time", "Pace", "HR", "Cad", "Pwr"
+            "  {:>3}  {:<9}  {:>9}  {:>8}  {:>10}  {:>4}  {:>4}  {:>4}",
+            "#", "Step", "Distance", "Time", "Pace", "HR", "Cad", "Pwr"
         );
         for (j, lap) in group.laps.iter().enumerate() {
             let fastest = if group.fastest.contains(&(j as u32)) {
@@ -370,33 +398,45 @@ fn print_detail(d: &ActivityDetail, requested: SportType) {
                 ""
             };
             println!(
-                "  {:>3}  {:>9}  {:>8}  {:>10}  {:>4}  {:>4}  {:>4}{fastest}",
+                "  {:>3}  {:<9}  {:>9}  {:>8}  {:>10}  {:>4}  {:>4}  {:>4}{fastest}",
                 lap.index,
+                lap.step_kind.map_or("", |k| k.label()),
                 format::distance(lap.distance),
                 format::duration(lap.duration),
-                format::pace(lap.pace, sport.category()),
+                format::pace(lap.pace, cat),
                 format::opt(lap.avg_hr),
                 format::opt(lap.avg_cadence),
                 format::opt(lap.avg_power),
             );
         }
+        let others: Vec<String> = d
+            .lap_groups
+            .iter()
+            .filter(|g| !std::ptr::eq(*g, group) && !g.laps.is_empty() && g.kind != Some(-1))
+            .map(|g| format!("{} ({})", g.label(), g.laps.len()))
+            .collect();
+        if !others.is_empty() {
+            println!("  also: {} (see --json)", others.join(", "));
+        }
     }
 
     let gps = d.samples.iter().filter(|s| s.lat.is_some()).count();
+    let hr = d.samples.iter().filter(|s| s.heart_rate.is_some()).count();
     let fields: BTreeSet<&str> = d
         .samples
         .iter()
         .flat_map(|s| s.other.keys().map(String::as_str))
         .collect();
     println!(
-        "\nSamples      {} ({} with GPS){}",
+        "\nSamples      {} ({} with GPS, {} with heart rate){}",
         d.samples.len(),
         gps,
+        hr,
         if fields.is_empty() {
             String::new()
         } else {
             format!(
-                "; other fields: {}",
+                "; also: {}",
                 fields.into_iter().collect::<Vec<_>>().join(", ")
             )
         }
@@ -408,13 +448,13 @@ fn print_analyse(a: &Analyse) {
         println!("EvoLab doesn't have enough data yet; values below may be empty.\n");
     }
     print_days(&a.days);
-    if let Some(latest) = a.rolling_7d.last() {
+    if let Some(latest) = a.rolling_7d.last().or(a.days.last()) {
         println!(
-            "\nLatest ({}): VO2max {}  LTHR {}  LT pace (raw) {}  Stamina {}",
+            "\nLatest ({}): VO2max {}  threshold HR {}  threshold pace {}  stamina {}",
             latest.date,
             format::opt_f(latest.vo2max, 0),
             format::opt(latest.lthr),
-            format::opt_f(latest.lt_pace_raw, 0),
+            format::pace(latest.lt_pace, SportCategory::Run),
             format::opt_f(latest.stamina_level, 0)
         );
     }
@@ -431,23 +471,73 @@ fn print_analyse(a: &Analyse) {
 
 fn print_days(days: &[DailyMetrics]) {
     println!(
-        "{:<10}  {:>9}  {:>7}  {:>4}  {:>4}  {:>4}  {:>5}  {:>5}  {:>5}  {:>7}",
-        "Date", "Distance", "Time", "RHR", "HRV", "Load", "ATI", "CTI", "Ratio", "Fatigue"
+        "{:<10}  {:>4}  {:>4}  {:>7}  {:>5}  {:>5}  {:>5}  {:>7}  {:>6}",
+        "Date", "RHR", "Load", "7d load", "ATI", "CTI", "Ratio", "Fatigue", "VO2max"
     );
     for d in days {
         println!(
-            "{:<10}  {:>9}  {:>7}  {:>4}  {:>4}  {:>4}  {:>5}  {:>5}  {:>5}  {:>7}",
+            "{:<10}  {:>4}  {:>4}  {:>7}  {:>5}  {:>5}  {:>5}  {:>7}  {:>6}",
             d.date,
-            format::distance(d.distance),
-            format::duration(d.duration),
             format::opt(d.test_rhr.or(d.rhr)),
-            format::opt_f(d.avg_sleep_hrv, 0),
             format::opt(d.training_load),
+            format::opt_f(d.load_7d, 0),
             format::opt_f(d.acute_load, 0),
             format::opt_f(d.chronic_load, 0),
             format::opt_f(d.load_ratio, 2),
             format::opt_f(d.fatigue, 0),
+            format::opt_f(d.vo2max, 0),
         );
+    }
+}
+
+fn print_dashboard(d: &Dashboard) {
+    println!(
+        "Recovery     {}%  (fully recovered in {} h)",
+        format::opt_f(d.recovery_pct, 0),
+        format::opt_f(d.full_recovery_hours, 0)
+    );
+    println!(
+        "Resting HR   {}   Max HR {}",
+        format::opt(d.resting_hr),
+        format::opt(d.max_hr)
+    );
+    println!(
+        "Threshold    {} bpm  {}",
+        format::opt(d.lthr),
+        format::pace(d.lt_pace, SportCategory::Run)
+    );
+    println!("Stamina      {}", format::opt_f(d.stamina_level, 1));
+    let s = &d.scores;
+    println!(
+        "Abilities    aerobic endurance {}  threshold {}  anaerobic endurance {}  anaerobic capacity {}",
+        format::opt_f(s.aerobic_endurance, 1),
+        format::opt_f(s.lactate_threshold, 1),
+        format::opt_f(s.anaerobic_endurance, 1),
+        format::opt_f(s.anaerobic_capacity, 1)
+    );
+    match &d.hrv {
+        None => println!("HRV          no data"),
+        Some(hrv) if hrv.nights.is_empty() && hrv.latest.is_none() => match hrv.remaining_wear_days
+        {
+            Some(n) => {
+                println!("HRV          not ready: wear the watch overnight {n} more night(s)")
+            }
+            None => println!("HRV          no recent nights"),
+        },
+        Some(hrv) => {
+            println!(
+                "HRV          baseline {} ms",
+                format::opt_f(hrv.baseline, 0)
+            );
+            for night in hrv.nights.iter().chain(hrv.latest.iter()) {
+                println!(
+                    "  {}  {:>3.0} ms  (sd {})",
+                    night.date,
+                    night.avg,
+                    format::opt_f(night.std_dev, 0)
+                );
+            }
+        }
     }
 }
 
@@ -469,11 +559,11 @@ fn print_schedule(s: &Schedule, range: DateRange) {
         println!("Nothing scheduled from {} to {}.", range.start, range.end);
     }
     for e in entries {
-        let (name, time, load) = match &e.workout {
+        let (name, time, dist) = match &e.workout {
             Some(w) => (
                 w.name.clone().unwrap_or_default(),
                 format::duration(w.duration),
-                format::opt(w.training_load),
+                format::distance(w.distance),
             ),
             None => (
                 "(unknown workout)".to_owned(),
@@ -481,23 +571,30 @@ fn print_schedule(s: &Schedule, range: DateRange) {
                 MISSING.to_owned(),
             ),
         };
+        let done = match (&e.activity_id, e.completion) {
+            (Some(id), Some(c)) => format!("done {:.0}% (activity {id})", c * 100.0),
+            (Some(id), None) => format!("done (activity {id})"),
+            _ => String::new(),
+        };
         println!(
-            "{}  {}  {:<28}  {:>8}  load {}",
+            "{}  {}  {:<24}  {:>8}  {:>9}  {done}",
             e.date,
             e.date.format("%a"),
-            fit(&name, 28),
+            fit(&name, 24),
             time,
-            load
+            dist
         );
     }
     if !s.weeks.is_empty() {
-        println!("\nWeek of      Planned / done (count)   Load planned / done");
+        println!("\nWeek of      Distance plan / done      Time plan / done     Load plan / done");
         for w in &s.weeks {
             println!(
-                "{}   {} / {}                     {} / {}",
+                "{}   {:>9} / {:<9}     {:>8} / {:<8}    {:>4} / {}",
                 w.week_start,
-                format::opt(w.plan_count),
-                format::opt(w.actual_count),
+                format::distance(w.plan_distance),
+                format::distance(w.actual_distance),
+                format::duration(w.plan_duration),
+                format::duration(w.actual_duration),
                 format::opt_f(w.plan_load, 0),
                 format::opt_f(w.actual_load, 0)
             );
@@ -511,35 +608,61 @@ fn print_workouts(workouts: &[Workout]) {
     }
     for w in workouts {
         println!(
-            "{}  {}  (sport code {}, ~{}, load {})",
+            "{}  {}  (sport code {}, ~{}, {})",
             w.id,
             w.name.as_deref().unwrap_or("(no name)"),
             format::opt(w.sport_code),
             format::duration(w.estimated_time),
-            format::opt(w.training_load)
+            format::distance(w.distance)
         );
         for step in &w.steps {
-            let target = match &step.target {
-                StepTarget::Distance { meters } => format::distance(Some(*meters)),
-                StepTarget::Time { seconds } => {
-                    format::duration(Some(std::time::Duration::from_secs_f64(seconds.max(0.0))))
-                }
-                StepTarget::Open => "until lap".to_owned(),
-                StepTarget::Other { target_type, value } => {
-                    format!("type {target_type} = {}", format::opt_f(*value, 0))
-                }
-            };
-            let sets = if step.sets > 1 {
-                format!("{}× ", step.sets)
-            } else {
-                String::new()
-            };
-            println!(
-                "    {sets}{} {target}",
-                step.name.as_deref().unwrap_or("step")
-            );
+            print_step(step, 1);
         }
     }
+}
+
+fn print_step(step: &WorkoutStep, depth: usize) {
+    let indent = "    ".repeat(depth);
+    if step.kind == Some(StepKind::Group) || !step.steps.is_empty() {
+        println!("{indent}{}× {}", step.sets, step.label);
+        for child in &step.steps {
+            print_step(child, depth + 1);
+        }
+        return;
+    }
+    let target = match &step.target {
+        StepTarget::Distance { meters } => format::distance(Some(*meters)),
+        StepTarget::Time { seconds } => {
+            format::duration(Some(std::time::Duration::from_secs_f64(seconds.max(0.0))))
+        }
+        StepTarget::Open => "until lap".to_owned(),
+        StepTarget::Other { target_type, value } => {
+            format!("type {target_type} = {}", format::opt_f(*value, 0))
+        }
+    };
+    let intensity = match &step.intensity {
+        Some(Intensity::Pace { fastest, slowest }) => format!(
+            " @ {}–{}",
+            format::pace(Some(*fastest), SportCategory::Run).trim_end_matches(" /km"),
+            format::pace(Some(*slowest), SportCategory::Run)
+        ),
+        Some(Intensity::Other {
+            intensity_type,
+            low,
+            high,
+        }) => format!(
+            " @ type {intensity_type}: {}–{}",
+            format::opt_f(*low, 0),
+            format::opt_f(*high, 0)
+        ),
+        None => String::new(),
+    };
+    let sets = if step.sets > 1 {
+        format!("{}× ", step.sets)
+    } else {
+        String::new()
+    };
+    println!("{indent}{sets}{} {target}{intensity}", step.label);
 }
 
 #[cfg(test)]

@@ -130,7 +130,13 @@ async fn activity_detail_outdoor_run() {
 
     assert_eq!(detail.samples.len(), 3);
     assert!((detail.samples[0].lat.unwrap() - 47.4).abs() < 1e-9);
-    assert_eq!(detail.samples[0].other.get("heart"), Some(&120.0));
+    assert_eq!(detail.samples[0].heart_rate, Some(120));
+    assert_eq!(detail.samples[1].distance.unwrap().0, 3.0, "centi-metres");
+    assert_eq!(
+        detail.samples[0].other.get("level"),
+        Some(&1200.0),
+        "unmodelled fields kept"
+    );
     assert_eq!(detail.samples[2].lat, None, "0 = no GPS fix");
     assert!(
         !detail.samples[2].other.contains_key("note"),
@@ -181,10 +187,10 @@ async fn analyse() {
     assert_eq!(a.days.len(), 2, "happenDay 0 dropped");
     let day = &a.days[0];
     assert_eq!((day.rhr, day.test_rhr), (Some(48), Some(46)));
-    assert_eq!(day.base_fitness, Some(62.4));
+    assert_eq!(day.load_28d, Some(62.4));
     let empty = &a.days[1];
     assert_eq!(
-        (empty.rhr, empty.performance, empty.base_fitness),
+        (empty.rhr, empty.performance, empty.load_28d),
         (None, None, None)
     );
     assert_eq!(a.rolling_7d[0].vo2max, Some(53.0));
@@ -219,12 +225,13 @@ async fn dashboard_hrv() {
     .await;
     let d = signed_in(&server).dashboard().await.unwrap();
     let hrv = d.hrv.unwrap();
-    assert_eq!(hrv.latest.as_ref().unwrap().avg, Some(52.0));
+    assert_eq!(hrv.latest.as_ref().unwrap().avg, 52.0);
     assert_eq!(
         hrv.nights.iter().map(|n| n.date).collect::<Vec<_>>(),
-        vec![date(2026, 10, 16), date(2026, 10, 17)]
+        vec![date(2026, 10, 17)],
+        "nights without an average are skipped"
     );
-    assert_eq!(hrv.nights[0].avg, None);
+    assert_eq!(hrv.baseline, Some(54.0));
     assert_json_snapshot!(hrv);
 
     let server = MockServer::start().await;
@@ -274,10 +281,17 @@ async fn schedule_with_plan() {
     );
     assert_eq!(s.entries[2].workout, None, "unknown idInPlan");
     assert_eq!(
-        s.weeks[0].plan_distance_raw,
-        Some(48000.0),
-        "string number parsed"
+        s.weeks[0].plan_distance,
+        Some(coros_api::Meters(48000.0)),
+        "string of metres ×100"
     );
+    let done = s
+        .entries
+        .iter()
+        .find(|e| e.date == date(2026, 10, 17))
+        .unwrap();
+    assert_eq!(done.activity_id, Some(LabelId("476100000000000001".into())));
+    assert_eq!((done.completion, done.score), (Some(0.94), Some(96.2)));
     assert_json_snapshot!(s);
 }
 
@@ -316,14 +330,15 @@ async fn workouts() {
             meters: coros_api::Meters(800.0)
         }
     );
+    assert_eq!(steps[1].sets, 6);
     assert_eq!(
-        (
-            steps[1].sets,
-            steps[1].intensity_low,
-            steps[1].intensity_high
-        ),
-        (6, Some(225.0), Some(235.0))
+        steps[1].intensity,
+        Some(coros_api::Intensity::Pace {
+            fastest: coros_api::Pace(225.0),
+            slowest: coros_api::Pace(235.0)
+        })
     );
+    assert_eq!(steps[0].label, "Warm up", "custom names kept");
     assert_eq!(steps[2].target, StepTarget::Open);
     assert_eq!(steps[3].sets, 1, "missing sets defaults to 1");
     assert!(matches!(

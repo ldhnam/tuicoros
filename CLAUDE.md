@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phase 0 is done; Phase 1 (API client + `login`/`api` CLI) is code-complete, pending live verification. The docs in
+Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phases 0 and 1 are done (API client + `login`/`api` CLI, verified live). Next: Phase 2 (MVP TUI). The docs in
 `docs/` are the source of truth; read the relevant one before changing code.
 
 - Roadmap and the current phase: `docs/PLAN.md` (tick checkboxes as work lands).
@@ -16,9 +16,9 @@ Terminal UI for COROS Training Hub in Rust (ratatui + tokio). Phase 0 is done; P
 - Never log tokens, password hashes, request bodies of `account/login`, or full download URLs.
 - Never auto-retry a write request. Writes need a confirm dialog.
 - No `unwrap()`/`expect()` outside tests and startup.
-- Tests must not hit the network (use wiremock + fixtures; `synthetic_*` fixtures are hand-written, real ones are scrubbed captures). Live tests are `#[ignore]` and need `COROS_LIVE=1`.
+- Tests must not hit the network (use wiremock + fixtures; `synthetic_*` fixtures are hand-written, `real*` ones are scrubbed captures). `captures/` (raw, unscrubbed) is git-ignored: never commit it. Live tests are `#[ignore]` and need `COROS_LIVE=1`.
 - Commit only scrubbed fixtures (`cargo run -p xtask -- scrub`).
-- The owner's account is in the **Asia** region and they mainly **run**: verify against `asia` first and polish running views first.
+- The owner lives in Vietnam but the account is on the **`us`** server (verified). They mainly **run**: polish running views first.
 - Every screen must render at 80×24 and must not panic at any size (see `never_panics_at_any_size`).
 
 ## Commands

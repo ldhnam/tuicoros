@@ -13,15 +13,21 @@ expression: detail
     "elapsed": 3220.0,
     "moving": 3131.0,
     "avg_pace": 312.45945811087273,
+    "best_km": null,
+    "adjusted_pace": null,
     "avg_hr": 148,
     "max_hr": 171,
     "avg_cadence": 176,
     "max_cadence": 190,
+    "avg_stride_length_cm": null,
     "avg_power": 262,
     "max_power": 401,
     "calories_kcal": 612.345,
     "training_load": 78,
     "elevation_gain": 84.0,
+    "elevation_loss": null,
+    "max_elevation": null,
+    "min_elevation": null,
     "aerobic_effect": 3.4,
     "anaerobic_effect": 1.2,
     "vo2max": 53.0
@@ -29,9 +35,11 @@ expression: detail
   "lap_groups": [
     {
       "kind": 1,
+      "split": 1000.0,
       "laps": [
         {
           "index": 1,
+          "step_kind": null,
           "distance": 1000.0,
           "duration": 318.0,
           "pace": 318.0,
@@ -43,6 +51,7 @@ expression: detail
         },
         {
           "index": 2,
+          "step_kind": null,
           "distance": 1000.0,
           "duration": 298.0,
           "pace": 298.0,
@@ -54,6 +63,7 @@ expression: detail
         },
         {
           "index": 3,
+          "step_kind": null,
           "distance": 20.5,
           "duration": 60.0,
           "pace": null,
@@ -70,9 +80,11 @@ expression: detail
     },
     {
       "kind": 2,
+      "split": null,
       "laps": [
         {
           "index": 1,
+          "step_kind": null,
           "distance": 10020.5,
           "duration": 3131.0,
           "pace": 312.45945811087273,
@@ -86,14 +98,18 @@ expression: detail
       "fastest": []
     }
   ],
+  "hr_zones": [],
   "samples": [
     {
       "time": "2026-10-17T23:42:00Z",
       "lat": 47.4,
       "lon": 8.5,
+      "distance": null,
+      "heart_rate": 120,
+      "cadence": null,
+      "power": null,
+      "altitude": null,
       "other": {
-        "distance": 0.0,
-        "heart": 120.0,
         "level": 1200.0
       }
     },
@@ -101,19 +117,23 @@ expression: detail
       "time": "2026-10-17T23:42:10Z",
       "lat": 47.40001,
       "lon": 8.50001,
-      "other": {
-        "distance": 300.0,
-        "heart": 122.0
-      }
+      "distance": 3.0,
+      "heart_rate": 122,
+      "cadence": null,
+      "power": null,
+      "altitude": null,
+      "other": {}
     },
     {
       "time": "2026-10-17T23:42:20Z",
       "lat": null,
       "lon": null,
-      "other": {
-        "distance": 610.0,
-        "heart": 125.0
-      }
+      "distance": 6.1,
+      "heart_rate": 125,
+      "cadence": null,
+      "power": null,
+      "altitude": null,
+      "other": {}
     }
   ],
   "feel": {

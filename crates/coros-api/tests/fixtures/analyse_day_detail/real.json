@@ -1,0 +1,1771 @@
+{
+  "apiCode": "CAPTURED",
+  "data": {
+    "dayList": [
+      {
+        "ati": 88.0,
+        "ct7dMaxFixed": 942.9,
+        "ct7dMin": 492.8,
+        "cti": 88.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20260928,
+        "performance": -1,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 54,
+        "sleepHrvIntervalList": [
+          5,
+          38,
+          49,
+          73
+        ],
+        "t28d": 2651,
+        "t7d": 706,
+        "tib": 0.0,
+        "timestamp": 1790553600,
+        "tiredRate": 46.0,
+        "tiredRateNew": 0.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -44.0,
+            "min": -88.0,
+            "type": 1
+          },
+          {
+            "max": -8.8,
+            "min": -44.0,
+            "type": 2
+          },
+          {
+            "max": 4.4,
+            "min": -8.8,
+            "type": 3
+          },
+          {
+            "max": 44.0,
+            "min": 4.4,
+            "type": 4
+          },
+          {
+            "min": 44.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 3,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 1.0,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 111.0,
+        "ct7dMaxFixed": 947.1,
+        "ct7dMin": 515.2,
+        "cti": 92.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20260929,
+        "lthr": 171,
+        "ltsp": 283,
+        "performance": 4,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 53,
+        "staminaLevel": 79.9,
+        "staminaLevel7d": 117.0,
+        "t28d": 2704,
+        "t7d": 856,
+        "tib": -19.0,
+        "timestamp": 1790640000,
+        "tiredRate": 52.0,
+        "tiredRateNew": 19.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -46.0,
+            "min": -92.0,
+            "type": 1
+          },
+          {
+            "max": -9.2,
+            "min": -46.0,
+            "type": 2
+          },
+          {
+            "max": 4.6000000000000005,
+            "min": -9.2,
+            "type": 3
+          },
+          {
+            "max": 27.6,
+            "min": 4.6000000000000005,
+            "type": 4
+          },
+          {
+            "min": 27.6,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 249,
+        "trainingLoadRatio": 1.2,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 96.0,
+        "ct7dMaxFixed": 951.3,
+        "ct7dMin": 504.0,
+        "cti": 90.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20260930,
+        "performance": -1,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 52,
+        "t28d": 2566,
+        "t7d": 741,
+        "tib": -6.0,
+        "timestamp": 1790726400,
+        "tiredRate": 48.0,
+        "tiredRateNew": 6.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -45.0,
+            "min": -90.0,
+            "type": 1
+          },
+          {
+            "max": -9.0,
+            "min": -45.0,
+            "type": 2
+          },
+          {
+            "max": 4.5,
+            "min": -9.0,
+            "type": 3
+          },
+          {
+            "max": 45.0,
+            "min": 4.5,
+            "type": 4
+          },
+          {
+            "min": 45.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 1.06,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 110.0,
+        "ct7dMaxFixed": 951.3,
+        "ct7dMin": 520.8,
+        "cti": 93.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261001,
+        "lthr": 171,
+        "ltsp": 283,
+        "performance": 3,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 56,
+        "staminaLevel": 80.0,
+        "staminaLevel7d": 102.0,
+        "t28d": 2614,
+        "t7d": 743,
+        "tib": -17.0,
+        "timestamp": 1790812800,
+        "tiredRate": 51.0,
+        "tiredRateNew": 17.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -46.5,
+            "min": -93.0,
+            "type": 1
+          },
+          {
+            "max": -9.3,
+            "min": -46.5,
+            "type": 2
+          },
+          {
+            "max": 4.65,
+            "min": -9.3,
+            "type": 3
+          },
+          {
+            "max": 46.5,
+            "min": 4.65,
+            "type": 4
+          },
+          {
+            "min": 46.5,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 200,
+        "trainingLoadRatio": 1.18,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 95.0,
+        "ct7dMaxFixed": 951.3,
+        "ct7dMin": 504.0,
+        "cti": 90.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261002,
+        "performance": -1,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 53,
+        "t28d": 2614,
+        "t7d": 743,
+        "tib": -5.0,
+        "timestamp": 1790899200,
+        "tiredRate": 47.0,
+        "tiredRateNew": 5.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -45.0,
+            "min": -90.0,
+            "type": 1
+          },
+          {
+            "max": -9.0,
+            "min": -45.0,
+            "type": 2
+          },
+          {
+            "max": 4.5,
+            "min": -9.0,
+            "type": 3
+          },
+          {
+            "max": 45.0,
+            "min": 4.5,
+            "type": 4
+          },
+          {
+            "min": 45.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 1.05,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 103.0,
+        "ct7dMaxFixed": 959.7,
+        "ct7dMin": 515.2,
+        "cti": 92.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261003,
+        "performance": -1,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 56,
+        "t28d": 2765,
+        "t7d": 600,
+        "tib": -11.0,
+        "timestamp": 1790985600,
+        "tiredRate": 49.0,
+        "tiredRateNew": 11.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -46.0,
+            "min": -92.0,
+            "type": 1
+          },
+          {
+            "max": -9.2,
+            "min": -46.0,
+            "type": 2
+          },
+          {
+            "max": 4.6000000000000005,
+            "min": -9.2,
+            "type": 3
+          },
+          {
+            "max": 46.0,
+            "min": 4.6000000000000005,
+            "type": 4
+          },
+          {
+            "min": 46.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 151,
+        "trainingLoadRatio": 1.11,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 133.0,
+        "ct7dMaxFixed": 970.2,
+        "ct7dMin": 543.2,
+        "cti": 97.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261004,
+        "lthr": 171,
+        "ltsp": 282,
+        "performance": 3,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "rhr": 53,
+        "staminaLevel": 80.2,
+        "staminaLevel7d": 102.0,
+        "t28d": 2798,
+        "t7d": 913,
+        "tib": -36.0,
+        "timestamp": 1791072000,
+        "tiredRate": 56.0,
+        "tiredRateNew": 36.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.5,
+            "min": -97.0,
+            "type": 1
+          },
+          {
+            "max": -9.7,
+            "min": -48.5,
+            "type": 2
+          },
+          {
+            "max": 4.8500000000000005,
+            "min": -9.7,
+            "type": 3
+          },
+          {
+            "max": 29.1,
+            "min": 4.8500000000000005,
+            "type": 4
+          },
+          {
+            "min": 29.1,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 5,
+        "trainingLoad": 313,
+        "trainingLoadRatio": 1.37,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 114.0,
+        "ct7dMaxFixed": 980.7,
+        "ct7dMin": 532.0,
+        "cti": 95.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261005,
+        "performance": -1,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 52,
+        "t28d": 2798,
+        "t7d": 913,
+        "tib": -19.0,
+        "timestamp": 1791158400,
+        "tiredRate": 51.0,
+        "tiredRateNew": 19.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -47.5,
+            "min": -95.0,
+            "type": 1
+          },
+          {
+            "max": -9.5,
+            "min": -47.5,
+            "type": 2
+          },
+          {
+            "max": 4.75,
+            "min": -9.5,
+            "type": 3
+          },
+          {
+            "max": 28.5,
+            "min": 4.75,
+            "type": 4
+          },
+          {
+            "min": 28.5,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 1.2,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 128.0,
+        "ct7dMaxFixed": 989.1,
+        "ct7dMin": 543.2,
+        "cti": 97.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261006,
+        "lthr": 174,
+        "ltsp": 282,
+        "performance": 4,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 55,
+        "staminaLevel": 80.3,
+        "staminaLevel7d": 115.0,
+        "t28d": 2777,
+        "t7d": 874,
+        "tib": -31.0,
+        "timestamp": 1791244800,
+        "tiredRate": 55.0,
+        "tiredRateNew": 31.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.5,
+            "min": -97.0,
+            "type": 1
+          },
+          {
+            "max": -9.7,
+            "min": -48.5,
+            "type": 2
+          },
+          {
+            "max": 4.8500000000000005,
+            "min": -9.7,
+            "type": 3
+          },
+          {
+            "max": 29.1,
+            "min": 4.8500000000000005,
+            "type": 4
+          },
+          {
+            "min": 29.1,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 5,
+        "trainingLoad": 210,
+        "trainingLoadRatio": 1.31,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 120.0,
+        "ct7dMaxFixed": 1003.8,
+        "ct7dMin": 543.2,
+        "cti": 97.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261007,
+        "lthr": 174,
+        "ltsp": 282,
+        "performance": 1,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 59,
+        "staminaLevel": 80.3,
+        "staminaLevel7d": 98.0,
+        "t28d": 2854,
+        "t7d": 951,
+        "tib": -23.0,
+        "timestamp": 1791331200,
+        "tiredRate": 52.0,
+        "tiredRateNew": 23.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.5,
+            "min": -97.0,
+            "type": 1
+          },
+          {
+            "max": -9.7,
+            "min": -48.5,
+            "type": 2
+          },
+          {
+            "max": 4.8500000000000005,
+            "min": -9.7,
+            "type": 3
+          },
+          {
+            "max": 29.1,
+            "min": 4.8500000000000005,
+            "type": 4
+          },
+          {
+            "min": 29.1,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 77,
+        "trainingLoadRatio": 1.23,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 128.0,
+        "ct7dMaxFixed": 1018.5,
+        "ct7dMin": 554.4,
+        "cti": 99.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261008,
+        "lthr": 174,
+        "ltsp": 281,
+        "performance": 4,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 54,
+        "staminaLevel": 80.4,
+        "staminaLevel7d": 106.0,
+        "t28d": 2947,
+        "t7d": 925,
+        "tib": -29.0,
+        "timestamp": 1791417600,
+        "tiredRate": 54.0,
+        "tiredRateNew": 29.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -49.5,
+            "min": -99.0,
+            "type": 1
+          },
+          {
+            "max": -9.9,
+            "min": -49.5,
+            "type": 2
+          },
+          {
+            "max": 4.95,
+            "min": -9.9,
+            "type": 3
+          },
+          {
+            "max": 29.7,
+            "min": 4.95,
+            "type": 4
+          },
+          {
+            "min": 29.7,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 174,
+        "trainingLoadRatio": 1.29,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 110.0,
+        "ct7dMaxFixed": 1016.4,
+        "ct7dMin": 537.6,
+        "cti": 96.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261009,
+        "performance": -1,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 56,
+        "t28d": 2947,
+        "t7d": 925,
+        "tib": -14.0,
+        "timestamp": 1791504000,
+        "tiredRate": 50.0,
+        "tiredRateNew": 14.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.0,
+            "min": -96.0,
+            "type": 1
+          },
+          {
+            "max": -9.6,
+            "min": -48.0,
+            "type": 2
+          },
+          {
+            "max": 4.800000000000001,
+            "min": -9.6,
+            "type": 3
+          },
+          {
+            "max": 28.799999999999997,
+            "min": 4.800000000000001,
+            "type": 4
+          },
+          {
+            "min": 28.799999999999997,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 1.14,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 94.0,
+        "ct7dMaxFixed": 1014.3,
+        "ct7dMin": 526.4,
+        "cti": 94.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261010,
+        "performance": -1,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 68,
+        "t28d": 2933,
+        "t7d": 774,
+        "tib": 0.0,
+        "timestamp": 1791590400,
+        "tiredRate": 46.0,
+        "tiredRateNew": 0.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -47.0,
+            "min": -94.0,
+            "type": 1
+          },
+          {
+            "max": -9.4,
+            "min": -47.0,
+            "type": 2
+          },
+          {
+            "max": 4.7,
+            "min": -9.4,
+            "type": 3
+          },
+          {
+            "max": 47.0,
+            "min": 4.7,
+            "type": 4
+          },
+          {
+            "min": 47.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 3,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 1.0,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 108.0,
+        "ct7dMaxFixed": 1012.2,
+        "ct7dMin": 537.6,
+        "cti": 96.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261011,
+        "lthr": 174,
+        "ltsp": 281,
+        "performance": 3,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "rhr": 52,
+        "staminaLevel": 80.5,
+        "staminaLevel7d": 102.0,
+        "t28d": 2926,
+        "t7d": 654,
+        "tib": -12.0,
+        "timestamp": 1791676800,
+        "tiredRate": 49.0,
+        "tiredRateNew": 12.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.0,
+            "min": -96.0,
+            "type": 1
+          },
+          {
+            "max": -9.6,
+            "min": -48.0,
+            "type": 2
+          },
+          {
+            "max": 4.800000000000001,
+            "min": -9.6,
+            "type": 3
+          },
+          {
+            "max": 48.0,
+            "min": 4.800000000000001,
+            "type": 4
+          },
+          {
+            "min": 48.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 193,
+        "trainingLoadRatio": 1.12,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 93.0,
+        "ct7dMaxFixed": 1005.9,
+        "ct7dMin": 526.4,
+        "cti": 94.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261012,
+        "performance": -1,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "rhr": 52,
+        "t28d": 2926,
+        "t7d": 654,
+        "tib": 1.0,
+        "timestamp": 1791763200,
+        "tiredRate": 45.0,
+        "tiredRateNew": -1.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -47.0,
+            "min": -94.0,
+            "type": 1
+          },
+          {
+            "max": -9.4,
+            "min": -47.0,
+            "type": 2
+          },
+          {
+            "max": 4.7,
+            "min": -9.4,
+            "type": 3
+          },
+          {
+            "max": 47.0,
+            "min": 4.7,
+            "type": 4
+          },
+          {
+            "min": 47.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 3,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 0.98,
+        "trainingLoadRatioState": 3,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 104.0,
+        "ct7dMaxFixed": 999.6,
+        "ct7dMin": 537.6,
+        "cti": 96.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261013,
+        "lthr": 174,
+        "ltsp": 281,
+        "performance": 3,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "rhr": 55,
+        "staminaLevel": 80.5,
+        "staminaLevel7d": 104.0,
+        "t28d": 2975,
+        "t7d": 614,
+        "tib": -8.0,
+        "timestamp": 1791849600,
+        "tiredRate": 48.0,
+        "tiredRateNew": 8.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.0,
+            "min": -96.0,
+            "type": 1
+          },
+          {
+            "max": -9.6,
+            "min": -48.0,
+            "type": 2
+          },
+          {
+            "max": 4.800000000000001,
+            "min": -9.6,
+            "type": 3
+          },
+          {
+            "max": 48.0,
+            "min": 4.800000000000001,
+            "type": 4
+          },
+          {
+            "min": 48.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 170,
+        "trainingLoadRatio": 1.08,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 101.0,
+        "ct7dMaxFixed": 999.6,
+        "ct7dMin": 537.6,
+        "cti": 96.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261014,
+        "lthr": 174,
+        "ltsp": 281,
+        "performance": 2,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "rhr": 53,
+        "staminaLevel": 80.5,
+        "staminaLevel7d": 100.0,
+        "t28d": 2958,
+        "t7d": 618,
+        "tib": -5.0,
+        "timestamp": 1791936000,
+        "tiredRate": 47.0,
+        "tiredRateNew": 5.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.0,
+            "min": -96.0,
+            "type": 1
+          },
+          {
+            "max": -9.6,
+            "min": -48.0,
+            "type": 2
+          },
+          {
+            "max": 4.800000000000001,
+            "min": -9.6,
+            "type": 3
+          },
+          {
+            "max": 48.0,
+            "min": 4.800000000000001,
+            "type": 4
+          },
+          {
+            "min": 48.0,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 81,
+        "trainingLoadRatio": 1.05,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 110.0,
+        "ct7dMaxFixed": 1005.9,
+        "ct7dMin": 543.2,
+        "cti": 97.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261015,
+        "lthr": 174,
+        "ltsp": 280,
+        "performance": 3,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "rhr": 50,
+        "staminaLevel": 80.7,
+        "staminaLevel7d": 104.0,
+        "t28d": 2972,
+        "t7d": 610,
+        "tib": -13.0,
+        "timestamp": 1792022400,
+        "tiredRate": 50.0,
+        "tiredRateNew": 13.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.5,
+            "min": -97.0,
+            "type": 1
+          },
+          {
+            "max": -9.7,
+            "min": -48.5,
+            "type": 2
+          },
+          {
+            "max": 4.8500000000000005,
+            "min": -9.7,
+            "type": 3
+          },
+          {
+            "max": 48.5,
+            "min": 4.8500000000000005,
+            "type": 4
+          },
+          {
+            "min": 48.5,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 166,
+        "trainingLoadRatio": 1.13,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      },
+      {
+        "ati": 94.0,
+        "ct7dMaxFixed": 1003.8,
+        "ct7dMin": 532.0,
+        "cti": 95.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261016,
+        "performance": -1,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "rhr": 55,
+        "t28d": 2972,
+        "t7d": 610,
+        "tib": 1.0,
+        "timestamp": 1792108800,
+        "tiredRate": 45.0,
+        "tiredRateNew": -1.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -47.5,
+            "min": -95.0,
+            "type": 1
+          },
+          {
+            "max": -9.5,
+            "min": -47.5,
+            "type": 2
+          },
+          {
+            "max": 4.75,
+            "min": -9.5,
+            "type": 3
+          },
+          {
+            "max": 47.5,
+            "min": 4.75,
+            "type": 4
+          },
+          {
+            "min": 47.5,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 3,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 0.98,
+        "trainingLoadRatioState": 3,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 81.0,
+        "ct7dMaxFixed": 1001.7,
+        "ct7dMin": 520.8,
+        "cti": 93.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261017,
+        "performance": -1,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "t28d": 2958,
+        "t7d": 610,
+        "tib": 12.0,
+        "timestamp": 1792195200,
+        "tiredRate": 42.0,
+        "tiredRateNew": -12.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -46.5,
+            "min": -93.0,
+            "type": 1
+          },
+          {
+            "max": -9.3,
+            "min": -46.5,
+            "type": 2
+          },
+          {
+            "max": 4.65,
+            "min": -9.3,
+            "type": 3
+          },
+          {
+            "max": 46.5,
+            "min": 4.65,
+            "type": 4
+          },
+          {
+            "min": 46.5,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 2,
+        "trainingLoad": 0,
+        "trainingLoadRatio": 0.87,
+        "trainingLoadRatioState": 3,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0
+      },
+      {
+        "ati": 106.0,
+        "ct7dMaxFixed": 1003.8,
+        "ct7dMin": 543.2,
+        "cti": 97.0,
+        "cycleVo2max": 0,
+        "distance": 0.0,
+        "distanceTarget": 0.0,
+        "duration": 0,
+        "durationTarget": 0,
+        "happenDay": 20261018,
+        "lthr": 174,
+        "ltsp": 280,
+        "performance": 2,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "rhr": 70,
+        "staminaLevel": 80.7,
+        "staminaLevel7d": 100.0,
+        "t28d": 2951,
+        "t7d": 678,
+        "tib": -9.0,
+        "timestamp": 1792281600,
+        "tiredRate": 48.0,
+        "tiredRateNew": 9.0,
+        "tiredRateNewZoneList": [
+          {
+            "max": -48.5,
+            "min": -97.0,
+            "type": 1
+          },
+          {
+            "max": -9.7,
+            "min": -48.5,
+            "type": 2
+          },
+          {
+            "max": 4.8500000000000005,
+            "min": -9.7,
+            "type": 3
+          },
+          {
+            "max": 48.5,
+            "min": 4.8500000000000005,
+            "type": 4
+          },
+          {
+            "min": 48.5,
+            "type": 5
+          }
+        ],
+        "tiredRateStateNew": 4,
+        "trainingLoad": 261,
+        "trainingLoadRatio": 1.09,
+        "trainingLoadRatioState": 4,
+        "trainingLoadRatioZoneList": [
+          {
+            "max": 0.5,
+            "min": 0.0,
+            "type": 1
+          },
+          {
+            "max": 0.8,
+            "min": 0.5,
+            "type": 2
+          },
+          {
+            "max": 1.0,
+            "min": 0.8,
+            "type": 3
+          },
+          {
+            "max": 1.5,
+            "min": 1.0,
+            "type": 4
+          },
+          {
+            "max": 1.8,
+            "min": 1.5,
+            "type": 5
+          }
+        ],
+        "trainingLoadTarget": 0.0,
+        "vo2max": 55
+      }
+    ],
+    "trainingWeekStageList": [],
+    "weekList": [
+      {
+        "firstDayOfWeek": 20261012,
+        "recomendTlMax": 1008.0,
+        "recomendTlMin": 672.0,
+        "trainingLoad": 678
+      },
+      {
+        "firstDayOfWeek": 20260928,
+        "recomendTlMax": 945.0,
+        "recomendTlMin": 630.0,
+        "trainingLoad": 913
+      },
+      {
+        "firstDayOfWeek": 20261005,
+        "recomendTlMax": 543.2,
+        "recomendTlMin": 339.5,
+        "trainingLoad": 654
+      }
+    ]
+  },
+  "message": "OK",
+  "result": "0000"
+}
+

@@ -11,16 +11,12 @@ expression: hrv
   },
   "nights": [
     {
-      "date": "2026-10-16",
-      "avg": null,
-      "baseline": 54.0,
-      "std_dev": null
-    },
-    {
       "date": "2026-10-17",
       "avg": 55.0,
       "baseline": 54.0,
       "std_dev": 4.0
     }
-  ]
+  ],
+  "baseline": 54.0,
+  "remaining_wear_days": null
 }

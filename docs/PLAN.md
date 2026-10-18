@@ -11,7 +11,7 @@ Read first: [ARCHITECTURE.md](ARCHITECTURE.md) · [COROS_API.md](COROS_API.md) �
 | Phase | Goal                                   | Ships                                                   | Size |
 | ----- | -------------------------------------- | ------------------------------------------------------- | ---- |
 | 0 ✅  | Project skeleton                       | Workspace, CI, logging, config, terminal safety         | S    |
-| 1 🟡  | **API client, proven live**            | `coros-api` crate + `tuicoros api …` debug CLI + fixtures | L  |
+| 1 ✅  | **API client, proven live**            | `coros-api` crate + `tuicoros api …` debug CLI + fixtures | L  |
 | 2     | **MVP TUI**                            | Login, Activities list, Activity detail (Summary, Laps) | L    |
 | 3     | Insight screens                        | Dashboard, Analysis (EvoLab), detail Charts + Map + Notes | L  |
 | 4     | Planning screens                       | Calendar, Workout library (read-only)                   | M    |
@@ -85,7 +85,7 @@ proptest = "1"
 
 ---
 
-## Phase 1 — API client, proven live 🟡 (code done 2026-10-18 · live verification pending)
+## Phase 1 — API client, proven live ✅ (done 2026-10-18)
 
 The riskiest phase. **No UI work** until this phase's exit criteria are met.
 
@@ -119,20 +119,23 @@ The riskiest phase. **No UI work** until this phase's exit criteria are met.
 - [x] Unit, fixture and wiremock tests: 129 tests, all offline. Plus a read-only live smoke test (`--ignored`).
 - [x] End-to-end run of the real binary against a local mock server (login, every `api`
       command, auto re-login, logout; headers and log contents checked).
-- [ ] **Capture real fixtures** (needs the owner's login): runs first: outdoor run with GPS,
-      treadmill run, interval workout with laps. Scrub, commit next to the `synthetic_*` ones.
-- [ ] **Verify against the live API** and update COROS_API.md (mark "verified"). Open questions:
-      the Asia host; detail elevation/TE scaling; the HR field name in `frequencyList`; `ltsp` unit;
-      `trainSum` distance unit; workout distance scale; lap group `type` meanings.
+- [x] **Real fixtures** captured from the owner's account and scrubbed (11 files: activity list;
+      12 km run, interval run, trail run, treadmill run, strength; EvoLab, daily, dashboard,
+      calendar, workouts) with `tests/real_fixtures.rs` pinning the verified facts.
+- [x] **Verified against the live API**; COROS_API.md corrected (§9). Findings: the account is on
+      `us`; detail responses are gzip-compressed; `t7d`/`t28d` are load totals (community notes were
+      wrong); lap groups, HR zones, sample fields, workout-step laps (no distance) all mapped.
+      Live fixes: gzip support, interval-lap distances, zone 0 display, scrubber (place names,
+      device ids, avatar).
 
 **Exit criteria**
 
-- [ ] On a real account: `tuicoros login` works; `tuicoros api activities` lists the last 90
-      days with correct km, pace and local start time (cross-checked by hand against t.coros.com for
-      3 activities of different sports).
-- [ ] `tuicoros api activity <id>` shows correct laps for a run (and a ride, if there is one).
-- [ ] Signing in on t.coros.com, then running a command, re-logs in transparently (with remember-me) or
-      asks to log in (without). *(Proven against the mock server; needs a real check.)*
+- [x] On a real account: `tuicoros login` works (region found automatically); `tuicoros api
+      activities` lists the last 90 days with correct km, pace and local start time (owner checked
+      the list; interval reps match the planned workout).
+- [x] `tuicoros api activity <id>` shows correct laps for runs (no rides in the account).
+- [ ] Signing in on t.coros.com, then running a command, re-logs in transparently. Proven against
+      the mock server; **watch for it in normal use** (`tuicoros status` shows the token age).
 - [x] All tests green with no network (locally; CI is switched off for now).
 
 ---

@@ -26,19 +26,20 @@ mod util;
 
 pub use account::Account;
 pub use activity::{
-    ActivityDetail, ActivityQuery, ActivitySummary, DetailSummary, Feel, FileFormat, Lap, LapGroup,
-    PerceivedExertion, Sample,
+    ActivityDetail, ActivityQuery, ActivitySummary, DetailSummary, Feel, FileFormat, HrZone, Lap,
+    LapGroup, PerceivedExertion, Sample,
 };
 pub use analyse::{Analyse, DailyMetrics, WeekLoad};
 pub use auth::{Credentials, Session, md5_hex};
 pub use client::{ClientConfig, CorosClient, DEFAULT_USER_AGENT};
-pub use dashboard::{Dashboard, HrvNight, HrvSummary};
+pub use dashboard::{AbilityScores, Dashboard, HrvNight, HrvSummary};
 pub use error::{CorosError, Result};
 pub use region::{ParseRegionError, Region};
 pub use request::{ApiRequest, HttpMethod};
 pub use sport::{SportCategory, SportType};
 pub use training::{
-    PlannedWorkout, Schedule, ScheduledWorkout, StepTarget, WeekPlan, Workout, WorkoutStep,
+    Intensity, PlannedWorkout, Schedule, ScheduledWorkout, StepKind, StepTarget, WeekPlan, Workout,
+    WorkoutStep,
 };
 pub use units::{DateRange, LabelId, Meters, Pace, Page, yyyymmdd};
 

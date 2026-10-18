@@ -23,6 +23,13 @@ const GPS_LON_KEYS: &[&str] = &[
     "lon",
     "longitude",
 ];
+/// An object with any of these keys is an activity; its `name` may reveal a
+/// place ("Hanoi Morning Run"), so it is replaced.
+const ACTIVITY_MARKERS: &[&str] = &["labelId", "startTimestamp", "startTime", "workoutTime"];
+/// Keys whose string values name places.
+const PLACE_KEYS: &[&str] = &["site", "location", "city", "address", "placeName", "region"];
+/// Large chart arrays the app does not use; emptied to keep fixtures small.
+const DROPPED_ARRAYS: &[&str] = &["graphList", "lapGraphList", "gpsLightDuration"];
 /// Long per-second series are thinned to about this many points.
 const MAX_SAMPLES: usize = 200;
 /// Fake origin for GPS tracks (open sea, so nobody's home).
@@ -54,6 +61,7 @@ impl Scrubber {
 
     fn scrub_object(&mut self, map: &mut Map<String, Value>) {
         self.pick_origin(map);
+        let is_activity = ACTIVITY_MARKERS.iter().any(|k| map.contains_key(*k));
         for (key, value) in map.iter_mut() {
             let k = key.as_str();
             if k == "frequencyList"
@@ -61,7 +69,11 @@ impl Scrubber {
             {
                 thin(items);
             }
-            if ID_KEYS.contains(&k) {
+            if DROPPED_ARRAYS.contains(&k) && value.is_array() {
+                *value = Value::Array(Vec::new());
+            } else if PLACE_KEYS.contains(&k) && value.is_string() {
+                *value = Value::String("Somewhere".into());
+            } else if ID_KEYS.contains(&k) {
                 *value = fake_id(value);
             } else if SECRET_KEYS.contains(&k) {
                 *value = Value::String("SCRUBBED".into());
@@ -69,6 +81,10 @@ impl Scrubber {
                 *value = Value::String("runner@example.invalid".into());
             } else if k == "nickname" || k == "realName" {
                 *value = Value::String("Test Runner".into());
+            } else if k == "name" && is_activity && value.is_string() {
+                *value = Value::String("Activity".into());
+            } else if matches!(k, "sex" | "gender") {
+                *value = Value::from(0);
             } else if matches!(k, "phone" | "mobile") {
                 *value = Value::String(String::new());
             } else if k == "birthday" {
@@ -85,6 +101,8 @@ impl Scrubber {
                 *value = self.shift(value, true);
             } else if GPS_LON_KEYS.contains(&k) {
                 *value = self.shift(value, false);
+            } else if let Some(masked) = value.as_str().and_then(mask_hardware_id) {
+                *value = Value::String(masked);
             } else {
                 self.scrub(value);
             }
@@ -129,6 +147,17 @@ impl Scrubber {
     }
 }
 
+/// Device names end with part of the Bluetooth address: "COROS PACE 4 3CD2B0".
+fn mask_hardware_id(s: &str) -> Option<String> {
+    let (head, tail) = s.rsplit_once(' ')?;
+    let is_hw = tail.len() == 6
+        && tail
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_lowercase())
+        && tail.chars().any(|c| c.is_ascii_digit());
+    is_hw.then(|| format!("{head} XXXXXX"))
+}
+
 fn degrees(v: &Value) -> Option<f64> {
     let raw = v.as_f64()?;
     Some(if raw.abs() > 1000.0 { raw / 1e7 } else { raw })
@@ -136,7 +165,7 @@ fn degrees(v: &Value) -> Option<f64> {
 
 fn is_url_key(key: &str) -> bool {
     let lower = key.to_ascii_lowercase();
-    lower.ends_with("url") || lower == "headpic"
+    lower.ends_with("url") || lower == "headpic" || lower == "avatar"
 }
 
 /// Same-shaped fake: digits stay digits (same length), other strings get a prefix.
@@ -220,7 +249,26 @@ mod tests {
             d["sportFeelInfo"]["voiceNoteWavUrl"], "",
             "empty stays empty"
         );
-        assert_eq!(d["name"], "Morning Run", "names are kept (review manually)");
+        assert_eq!(d["name"], "Morning Run", "non-activity names are kept");
+        let a = scrubbed(
+            json!({"labelId": "1", "name": "Hanoi Run", "userInfo": {"avatar": "https://x/y.png", "sex": 1}}),
+        );
+        assert_eq!(a["name"], "Activity", "activity names can reveal places");
+        assert_eq!(a["userInfo"]["avatar"], "https://example.invalid/scrubbed");
+        assert_eq!(a["userInfo"]["sex"], 0);
+        let r = scrubbed(json!({"recordDetailList": [{"site": "Hanoi Run", "graphList": [1, 2]}]}));
+        assert_eq!(r["recordDetailList"][0]["site"], "Somewhere");
+        assert_eq!(r["recordDetailList"][0]["graphList"], json!([]));
+        let dev = scrubbed(
+            json!({"deviceList": [{"name": "COROS PACE 4 3CD2B0"}], "device": "COROS PACE 4"}),
+        );
+        assert_eq!(dev["deviceList"][0]["name"], "COROS PACE 4 XXXXXX");
+        assert_eq!(dev["device"], "COROS PACE 4");
+        let w = scrubbed(json!({"exercises": [{"name": "T3001"}], "name": "Interval"}));
+        assert_eq!(
+            (w["name"].as_str(), w["exercises"][0]["name"].as_str()),
+            (Some("Interval"), Some("T3001"))
+        );
     }
 
     #[test]
