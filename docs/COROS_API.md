@@ -371,5 +371,17 @@ What `coros-api` assumes, and how sure we are. Live = checked against a real acc
 | `performance`, `tib`, `levelMap`, pace-zone scopes | ❓ Unknown meaning; not used |
 | Other sports (bike, swim) | ❓ Not in the owner's data; still based on community notes |
 
+Added in Phase 3 (live, 2026-10-18):
+
+| Finding | Status |
+| --- | --- |
+| `weather` values are ×10: `temperature` 261 = 26.1 °C, `bodyFeelTemp`, `humidity` 810 = 81 %, `windDirection` 3380 = 338° | ✅ Live (plausible for the time and place) |
+| `weather.windSpeed` is ×10, unit unknown (km/h or m/s); `weatherType` codes unmapped | ⚠️ |
+| Per-second `speed` / `adjustedPace` are pace in s/km for runs (median 320 vs a 5:19 /km activity) | ✅ Live; meaning for other sports unknown |
+| `analyse/dayDetail/query` also returns `weekList` (weekly load + recommended range) | ✅ Live |
+| `dayList[].distance` / `duration` are always 0 | ✅ Live: weekly distance has to come from activities |
+| Resting HR: `dashboard.summaryInfo.rhr` (54) ≠ `dayList[].rhr` (70) on the same day; `testRhr` absent | ⚠️ Which one t.coros.com shows is unconfirmed |
+| `activity/query` `totalPage` can exceed what the requested `size` implies: stop on an empty page | ✅ Live (handled) |
+
 How to check: `tuicoros api <command> --raw` shows the untouched response, and
 `cargo run -p xtask -- scrub` turns it into a commit-safe fixture (docs/TESTING.md §2).

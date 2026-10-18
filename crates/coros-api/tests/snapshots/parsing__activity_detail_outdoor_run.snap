@@ -109,6 +109,8 @@ expression: detail
       "cadence": null,
       "power": null,
       "altitude": null,
+      "pace": null,
+      "adjusted_pace": null,
       "other": {
         "level": 1200.0
       }
@@ -122,6 +124,8 @@ expression: detail
       "cadence": null,
       "power": null,
       "altitude": null,
+      "pace": null,
+      "adjusted_pace": null,
       "other": {}
     },
     {
@@ -133,6 +137,8 @@ expression: detail
       "cadence": null,
       "power": null,
       "altitude": null,
+      "pace": null,
+      "adjusted_pace": null,
       "other": {}
     }
   ],
@@ -141,7 +147,11 @@ expression: detail
     "note": "Felt good"
   },
   "weather": {
-    "humidity": 70,
-    "temperature": 2650
+    "temperature_c": 26.5,
+    "feels_like_c": 28.4,
+    "humidity_pct": 70.0,
+    "wind_speed": 6.8,
+    "wind_direction_deg": 338.0,
+    "condition_code": 12
   }
 }

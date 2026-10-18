@@ -140,7 +140,7 @@ The riskiest phase. **No UI work** until this phase's exit criteria are met.
 
 ---
 
-## Phase 2 — MVP TUI 🟡 (code done 2026-10-18 · live check pending)
+## Phase 2 — MVP TUI ✅ (done 2026-10-18)
 
 **Tasks**
 
@@ -161,32 +161,40 @@ The riskiest phase. **No UI work** until this phase's exit criteria are met.
 
 **Exit criteria**
 
-- [ ] Cold start (no cache) shows the first page within ~2 s on a normal connection. *(The API call
-      took 0.9 s in a live test; the visible delay came from the macOS Keychain prompt, now fixed.)*
-      A warm start shows cached data immediately and refreshes in the background.
-- [ ] Scrolling 500+ activities stays smooth. The UI never freezes while loading.
+- [x] Cold start (no cache) shows the first page within ~2 s (live: the list request takes ~0.9 s;
+      the whole Dashboard, 4 requests in parallel, 2.4 s). A warm start shows cached data at once.
+- [ ] Scrolling 500+ activities stays smooth. *Not measurable on the owner's account (57
+      activities); the UI never freezes while loading (all I/O is off the UI task).*
 - [x] Works at 80×24 (snapshots at 60×15, 80×24, 100×30; no panic at any size).
 
-👉 **Good point to share an early build and get feedback before Phase 3.**
 
 ---
 
-## Phase 3 — Insight screens
+## Phase 3 — Insight screens ✅ (done 2026-10-18 · one spot-check open)
 
-- [ ] Dashboard (HRV, RHR, fatigue, load ratio, 28-day load sparkline, this week vs plan, recent 5).
-- [ ] Analysis screen: ATI vs CTI chart, RHR + HRV sparklines, weekly distance bars, threshold/VO2max
-      panel, range navigation (4/12/24 weeks, 12-week chunked `dayDetail` fetches), "insufficient
-      data" state.
-- [ ] Activity detail **Charts** tab: metric picker (HR/pace/elev/cadence/power), x-axis toggle
-      (distance/time), downsampling (e.g. LTTB) to chart width.
-- [ ] Activity detail **Map** tab: Canvas braille track, start/finish markers, fit to bounds,
-      keep aspect ratio (correct for latitude).
-- [ ] Activity detail **Notes** tab: RPE, note, weather.
-- [ ] HR zone bar widget.
-- [ ] Snapshot tests for all of the above.
+- [x] Dashboard (tab 1, shown after sign-in): tiles for recovery, fatigue, load ratio (with zone
+      meters), resting HR, HRV (or "N more nights"), VO2max, threshold; 28-day acute/chronic load
+      chart; this week plan vs actual; recent 5 activities (Enter opens); ability scores.
+- [x] Analysis (tab 3): 4/12/24-week window (`w`), moved with `[` `]`; acute vs chronic load chart,
+      resting HR, weekly load vs COROS's recommended range, weekly distance (from activities),
+      fitness changes (VO2max, threshold HR/pace, stamina, CTI). HRV waits for real HRV data.
+- [x] Activity detail **Charts**: HR / pace (inverted, stops capped) / elevation / cadence / power
+      (`m`), distance or time axis (`x`), LTTB downsampling to chart width.
+- [x] Activity detail **Map**: braille track, aspect-correct projection, start/finish (or `S/F` on
+      loops), north up.
+- [x] Activity detail **Notes**: effort scale, note, weather, times, device.
+- [x] HR zone bars (Summary tab, since Phase 2).
+- [x] Snapshots for all of the above (Dashboard, Analysis, Charts, Map, Notes at 80×24 and 100×30).
+- [x] Generic cached `Fetch` command + `Slot<T>`; new data: dashboard, daily metrics + weekly loads,
+      schedule, activities-in-range. Weather (×10), per-second pace and weekly loads added to `coros-api`.
 
-**Exit criteria:** numbers on the Dashboard and Analysis match t.coros.com for the same day/range
-(spot-check 5 values).
+**Exit criteria**
+
+- [x] Works on the owner's account: Dashboard 2.4 s cold, Analysis 0.4 s, Charts/Map/Notes on a
+      real 12 km run; 8 requests for a full tour, no errors.
+- [ ] Numbers match t.coros.com (spot-check 5 values). Open question: resting HR differs between
+      sources (dashboard 54 vs EvoLab daily 70 on the same day). Which one t.coros.com shows decides
+      what the Analysis panel uses.
 
 ---
 

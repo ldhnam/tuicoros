@@ -4,7 +4,10 @@
 //! the `*Loaded` / `*Failed` variants. `App::update` is the only consumer.
 
 use chrono::{DateTime, Utc};
-use coros_api::{ActivityDetail, ActivitySummary, CorosError, Page, Region};
+use coros_api::{
+    ActivityDetail, ActivitySummary, CorosError, Daily, Dashboard, Page, Region, Schedule,
+};
+use serde::{Deserialize, Serialize};
 
 use crate::app::Tab;
 
@@ -37,6 +40,8 @@ pub enum Action {
     Login(LoginMsg),
     Activities(ActivitiesMsg),
     Detail(DetailMsg),
+    Dashboard(DashboardMsg),
+    Analysis(AnalysisMsg),
 
     // Results of background work.
     ActivitiesLoaded {
@@ -53,6 +58,15 @@ pub enum Action {
         fetched_at: DateTime<Utc>,
         from_cache: bool,
     },
+    /// Result of a `Command::Fetch` (dashboard, daily metrics, schedule, …).
+    Fetched {
+        req: RequestId,
+        data: Box<Fetched>,
+        fetched_at: DateTime<Utc>,
+        from_cache: bool,
+        /// A network refresh for the same request follows (cached data was stale).
+        refreshing: bool,
+    },
     RequestFailed {
         req: RequestId,
         error: UiError,
@@ -64,6 +78,34 @@ pub enum Action {
     LoginFailed {
         message: String,
     },
+}
+
+/// Data delivered by `Command::Fetch`. Also the on-disk cache format.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Fetched {
+    Dashboard(Dashboard),
+    Daily(Daily),
+    Schedule(Schedule),
+    /// Every activity in a date range (for weekly totals).
+    Activities(Vec<ActivitySummary>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DashboardMsg {
+    Move(Move),
+    Open,
+    Refresh,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnalysisMsg {
+    /// `[`: move the window back by its length.
+    Earlier,
+    /// `]`: move it forward (not past today).
+    Later,
+    /// `w`: 4 → 12 → 24 weeks.
+    CycleWeeks,
+    Refresh,
 }
 
 /// Text-field editing.
@@ -132,6 +174,10 @@ pub enum DetailMsg {
     PrevTab,
     Move(Move),
     CycleLapGroup,
+    /// Charts: next metric (HR, pace, elevation, cadence, power).
+    CycleMetric,
+    /// Charts: distance ↔ time on the x axis.
+    ToggleAxis,
     Refresh,
 }
 

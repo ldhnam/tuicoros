@@ -236,6 +236,11 @@ impl ActivitiesScreen {
         self.pages.values().flatten()
     }
 
+    /// The newest `n` loaded activities, regardless of search and sort.
+    pub fn recent(&self, n: usize) -> Vec<&ActivitySummary> {
+        self.all().take(n).collect()
+    }
+
     /// The rows on screen: search-filtered and sorted.
     pub fn visible(&self) -> Vec<&ActivitySummary> {
         let needle = self

@@ -407,8 +407,8 @@ async fn day_detail_is_fetched_in_chunks_and_merged() {
         .await;
     let d = |m, day| NaiveDate::from_ymd_opt(2026, m, day).unwrap();
     let range = DateRange::new(d(7, 1), d(10, 18)).unwrap(); // 110 days → 84 + 26
-    let days = signed_in(&server).day_detail(range).await.unwrap();
-    let dates: Vec<_> = days.iter().map(|m| m.date).collect();
+    let daily = signed_in(&server).day_detail(range).await.unwrap();
+    let dates: Vec<_> = daily.days.iter().map(|m| m.date).collect();
     assert_eq!(
         dates,
         vec![d(10, 16), d(10, 17), d(10, 18)],

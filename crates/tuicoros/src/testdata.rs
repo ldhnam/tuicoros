@@ -4,8 +4,9 @@ use std::time::Duration;
 
 use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
 use coros_api::{
-    ActivityDetail, ActivitySummary, DetailSummary, Feel, HrZone, LabelId, Lap, LapGroup, Meters,
-    Pace, Page, PerceivedExertion, SportType, StepKind,
+    AbilityScores, ActivityDetail, ActivitySummary, Daily, DailyMetrics, Dashboard, DetailSummary,
+    Feel, HrZone, HrvSummary, LabelId, Lap, LapGroup, Meters, Pace, Page, PerceivedExertion,
+    Sample, Schedule, ScheduledWorkout, SportType, StepKind, Weather, WeekLoad, WeekPlan,
 };
 
 pub fn today() -> NaiveDate {
@@ -173,11 +174,149 @@ pub fn detail() -> ActivityDetail {
             zone(4, 178, 184, 449, 21.0),
             zone(5, 184, 255, 365, 17.0),
         ],
-        samples: Vec::new(),
+        samples: samples(summary.start.map(|t| t.with_timezone(&Utc))),
         feel: Feel {
             perceived_exertion: Some(PerceivedExertion::Hard),
             note: Some("Windy, legs felt heavy".to_owned()),
         },
-        weather: None,
+        weather: Some(Weather {
+            temperature_c: Some(26.1),
+            feels_like_c: Some(28.4),
+            humidity_pct: Some(81.0),
+            wind_speed: Some(6.8),
+            wind_direction_deg: Some(338.0),
+            condition_code: Some(12),
+        }),
+    }
+}
+
+pub fn date(y: i32, m: u32, d: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(y, m, d).unwrap()
+}
+
+/// 600 samples of an oval 10 km loop with intervals: HR, pace, altitude, cadence, power.
+fn samples(start: Option<DateTime<Utc>>) -> Vec<Sample> {
+    let start = start.unwrap_or_else(now);
+    (0..600)
+        .map(|i| {
+            let t = f64::from(i) / 600.0 * std::f64::consts::TAU;
+            let rep = (i / 30) % 2 == 0; // alternating 30-sample blocks
+            Sample {
+                time: Some(start + chrono::Duration::seconds(i64::from(i) * 5)),
+                lat: Some(46.50 + 0.012 * t.sin()),
+                lon: Some(6.60 + 0.025 * t.cos()),
+                distance: Some(Meters(f64::from(i) * 16.7)),
+                heart_rate: Some(140 + (i / 20) as u32 + if rep { 12 } else { 0 }),
+                cadence: Some(if rep { 184 } else { 168 }),
+                power: Some(if rep { 260 } else { 170 }),
+                altitude: Some(15.0 + 12.0 * (2.0 * t).sin()),
+                pace: Some(Pace(if rep { 265.0 } else { 390.0 })),
+                adjusted_pace: None,
+                other: Default::default(),
+            }
+        })
+        .collect()
+}
+
+pub fn dashboard() -> Dashboard {
+    Dashboard {
+        recovery_pct: Some(89.0),
+        full_recovery_hours: Some(21.0),
+        resting_hr: Some(54),
+        max_hr: Some(195),
+        lthr: Some(174),
+        lt_pace: Some(Pace(280.0)),
+        stamina_level: Some(80.7),
+        scores: AbilityScores {
+            aerobic_endurance: Some(80.3),
+            lactate_threshold: Some(80.5),
+            anaerobic_endurance: Some(80.5),
+            anaerobic_capacity: Some(80.7),
+        },
+        hrv: Some(HrvSummary {
+            latest: None,
+            nights: Vec::new(),
+            baseline: Some(61.0),
+            remaining_wear_days: Some(1),
+        }),
+    }
+}
+
+/// `days` days of EvoLab metrics ending today, with weekly loads.
+pub fn daily(days: u32) -> Daily {
+    let first = today() - chrono::Duration::days(i64::from(days) - 1);
+    let days: Vec<DailyMetrics> = (0..days)
+        .map(|i| {
+            let f = f64::from(i);
+            let acute = 90.0 + 15.0 * (f / 4.0).sin() + f * 0.3;
+            let chronic = 80.0 + f * 0.25;
+            DailyMetrics {
+                date: first + chrono::Duration::days(i64::from(i)),
+                distance: None,
+                duration: None,
+                rhr: Some(55 + (i % 5)),
+                test_rhr: None,
+                training_load: (i % 3 != 2).then_some(100 + (i % 7) * 25),
+                load_7d: Some(600.0),
+                load_28d: Some(2400.0),
+                acute_load: Some(acute),
+                chronic_load: Some(chronic),
+                load_ratio: Some(acute / chronic),
+                load_ratio_state: Some(4),
+                fatigue: Some(acute - chronic),
+                fatigue_state: Some(4),
+                performance: Some(2.0),
+                recommended_load_min: Some(672.0),
+                recommended_load_max: Some(1008.0),
+                avg_sleep_hrv: None,
+                sleep_hrv_baseline: None,
+                vo2max: Some(54.0 + (f / 20.0).floor()),
+                lthr: Some(172 + (i / 20)),
+                lt_pace: Some(Pace(290.0 - f / 4.0)),
+                stamina_level: Some(80.7),
+                stamina_level_7d: Some(100.0),
+            }
+        })
+        .collect();
+    let mut weeks = Vec::new();
+    let mut monday = crate::screens::dashboard::week_start(first);
+    let mut n = 0.0;
+    while monday <= today() {
+        weeks.push(WeekLoad {
+            week_start: monday,
+            training_load: Some(600.0 + n * 37.0),
+            recommended_min: Some(672.0),
+            recommended_max: Some(1008.0),
+        });
+        monday += chrono::Duration::days(7);
+        n += 1.0;
+    }
+    Daily { days, weeks }
+}
+
+/// This week (Mon 12 – Sun 18 Oct): 12.6 km planned, 32.65 km done.
+pub fn schedule() -> Schedule {
+    Schedule {
+        plan_id: Some("plan-1".into()),
+        plan_name: Some("10K plan".into()),
+        plan_start: Some(date(2026, 10, 12)),
+        plan_end: Some(date(2026, 11, 8)),
+        entries: vec![ScheduledWorkout {
+            date: date(2026, 10, 13),
+            id_in_plan: Some("1".into()),
+            workout: None,
+            activity_id: Some(activity(5).id),
+            completion: Some(0.94),
+            score: Some(96.2),
+        }],
+        weeks: vec![WeekPlan {
+            week_start: date(2026, 10, 12),
+            plan_distance: Some(Meters(12_600.0)),
+            actual_distance: Some(Meters(32_650.0)),
+            plan_duration: Some(Duration::from_secs(4684)),
+            actual_duration: Some(Duration::from_secs(10_908)),
+            plan_load: Some(279.0),
+            actual_load: Some(678.0),
+        }],
     }
 }

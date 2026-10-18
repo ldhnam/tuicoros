@@ -4,6 +4,7 @@
 
 mod action;
 mod app;
+mod charts;
 mod cli;
 mod commands;
 mod config;
@@ -115,6 +116,7 @@ async fn run_tui(ctx: &Ctx<'_>) -> Result<()> {
         region: config.region,
         page_size: u32::from(config.activities.page_size),
         default_range_days: config.activities.default_range_days,
+        analysis_weeks: u32::from(config.analysis.default_weeks),
         notice: loaded.warnings.first().map(|w| format!("config: {w}")),
         last_email: stored.as_ref().and_then(|s| s.email.clone()),
     };
